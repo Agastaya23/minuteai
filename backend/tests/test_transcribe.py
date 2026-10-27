@@ -131,3 +131,35 @@ def test_pipeline_caches(tmp_path, transcript):
     assert backend.calls == 1  # cache hit
     transcribe_meeting("audio/m1/original.mp3", "m1", backend=backend, repo=repo, force=True)
     assert backend.calls == 2
+
+
+def test_sentence_split_fallback_without_diarization():
+    labeled = [(_w("Hi.", 0.0, 0.3), "S"), (_w("Thanks", 0.7, 1.0), "S"),
+               (_w("Priya.", 1.0, 1.4), "S"), (_w("Next", 1.5, 1.8), "S")]
+    assert len(group_utterances(labeled)) == 1
+    utts = group_utterances(labeled, sentence_pause_sec=0.3)
+    assert [u.text for u in utts] == ["Hi.", "Thanks Priya. Next"]
+
+
+def test_long_utterances_capped_at_sentence_end():
+    labeled = [(_w(f"w{i}.", i * 1.0, i * 1.0 + 0.5), "S") for i in range(70)]
+    utts = group_utterances(labeled, max_utt_sec=30)
+    assert len(utts) == 3 and all(u.end - u.start <= 31 for u in utts)
+
+
+@needs_ffmpeg
+def test_wav_windows_cover_audio_once(tmp_path):
+    import numpy as np
+
+    from minuteai.transcribe.whisper_backend import SAMPLE_RATE, iter_wav_windows
+
+    wav = to_wav16k(_tone(tmp_path / "t.wav"), tmp_path / "t16.wav")
+    subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-f", "lavfi", "-i",
+                    "sine=frequency=300:duration=7", "-ar", "16000", "-ac", "1",
+                    str(tmp_path / "long.wav")], check=True)
+    windows = list(iter_wav_windows(tmp_path / "long.wav", window_sec=3))
+    total = sum(len(s) for _, s in windows)
+    assert total == 7 * SAMPLE_RATE
+    for (o1, s1), (o2, _) in zip(windows, windows[1:], strict=False):
+        assert np.isclose(o1 + len(s1) / SAMPLE_RATE, o2)
+    assert wav.exists()

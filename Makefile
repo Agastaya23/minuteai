@@ -1,4 +1,4 @@
-.PHONY: install dev-backend dev-frontend test lint fmt ddb-up ddb-down create-table seed eval
+.PHONY: install install-ml dev-backend dev-frontend test lint fmt ddb-up ddb-down aws-mock create-table seed sample-audio eval
 
 UV ?= uv
 
@@ -32,8 +32,15 @@ ddb-up:
 ddb-down:
 	docker compose down
 
+# In-memory S3 + DynamoDB on :5001 (no Docker). Point both endpoint URLs at it.
+aws-mock:
+	cd backend && $(UV) run moto_server -H 127.0.0.1 -p 5001
+
 create-table:
 	cd backend && $(UV) run python ../scripts/create_table.py
+
+sample-audio:
+	cd backend && $(UV) run python ../scripts/make_sample_audio.py
 
 seed:
 	cd backend && $(UV) run python ../scripts/seed.py

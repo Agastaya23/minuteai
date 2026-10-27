@@ -88,7 +88,15 @@ SAMPLE_SERIES_ID = "payments-weekly"
 SAMPLE_PARTICIPANTS = ["Priya", "Rahul", "Ananya"]
 
 
-def build_transcript(meeting_id: str, lines: list[tuple[str, str]]) -> Transcript:
+def build_transcript(
+    meeting_id: str,
+    lines: list[tuple[str, str]],
+    timings: list[tuple[float, float]] | None = None,
+) -> Transcript:
+    """Synthetic transcript; with `timings` (per-utterance start/end, e.g. measured
+    from generated sample audio) words are spread across each real clip."""
+    if timings is not None:
+        return _timed_transcript(meeting_id, lines, timings)
     utterances: list[Utterance] = []
     t = 0.0
     for i, (speaker, text) in enumerate(lines):
@@ -115,8 +123,30 @@ def build_transcript(meeting_id: str, lines: list[tuple[str, str]]) -> Transcrip
     )
 
 
-def sample_transcript(meeting_id: str = "demo-sprint-planning") -> Transcript:
-    return build_transcript(meeting_id, SAMPLE_MEETINGS[meeting_id]["lines"])
+def _timed_transcript(
+    meeting_id: str, lines: list[tuple[str, str]], timings: list[tuple[float, float]]
+) -> Transcript:
+    utterances: list[Utterance] = []
+    for i, ((speaker, text), (start, end)) in enumerate(zip(lines, timings, strict=True)):
+        tokens = text.split()
+        weights = [len(tok) + 2 for tok in tokens]
+        total = sum(weights)
+        words, t = [], start
+        for tok, w in zip(tokens, weights, strict=True):
+            dur = (end - start) * w / total
+            words.append(Word(text=tok, start=round(t, 3), end=round(t + dur * 0.9, 3)))
+            t += dur
+        utterances.append(Utterance(utt_id=i, speaker_label=speaker, text=text,
+                                    start=round(start, 3), end=round(end, 3), words=words))
+    return Transcript(meeting_id=meeting_id, utterances=utterances,
+                      duration_sec=round(timings[-1][1] + GAP_SEC, 3), backend="synthetic",
+                      model_version="synthetic-v1+tts-aligned")
+
+
+def sample_transcript(
+    meeting_id: str = "demo-sprint-planning", timings: list[tuple[float, float]] | None = None
+) -> Transcript:
+    return build_transcript(meeting_id, SAMPLE_MEETINGS[meeting_id]["lines"], timings)
 
 
 def sample_occurred_at(meeting_id: str, now: datetime | None = None) -> datetime:

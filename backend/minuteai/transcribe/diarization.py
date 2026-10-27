@@ -16,6 +16,8 @@ from minuteai.models.transcript import Utterance, Word
 log = logging.getLogger(__name__)
 
 PAUSE_SPLIT_SEC = 1.5
+SENTENCE_PAUSE_SEC = 0.3  # single-speaker fallback only
+MAX_UTTERANCE_SEC = 30.0
 DEFAULT_SPEAKER = "SPEAKER_00"
 _NO_SPACE_BEFORE = {".", ",", "?", "!", ";", ":", "%", "'s", "n't"}
 
@@ -75,10 +77,23 @@ def join_words(words: list[Word]) -> str:
     return text
 
 
+def _ends_sentence(word: Word) -> bool:
+    return word.text.rstrip("\"')]").endswith((".", "?", "!"))
+
+
 def group_utterances(
-    labeled: list[tuple[Word, str]], pause_sec: float = PAUSE_SPLIT_SEC
+    labeled: list[tuple[Word, str]],
+    pause_sec: float = PAUSE_SPLIT_SEC,
+    sentence_pause_sec: float | None = None,
+    max_utt_sec: float = MAX_UTTERANCE_SEC,
 ) -> list[Utterance]:
-    """Group consecutive same-speaker words; split on speaker change or long pause."""
+    """Group consecutive same-speaker words; split on speaker change or long pause.
+
+    Also splits at a sentence end when the utterance is already longer than
+    `max_utt_sec`, and — when `sentence_pause_sec` is set (no diarization
+    available) — at any sentence end followed by at least that much silence,
+    so a single-speaker fallback still yields citable, utterance-sized units.
+    """
     utterances: list[Utterance] = []
     current: list[Word] = []
     speaker: str | None = None
@@ -97,9 +112,15 @@ def group_utterances(
             )
 
     for word, spk in labeled:
-        if current and (spk != speaker or word.start - current[-1].end > pause_sec):
-            flush()
-            current = []
+        if current:
+            gap = word.start - current[-1].end
+            sentence_break = _ends_sentence(current[-1]) and (
+                (sentence_pause_sec is not None and gap >= sentence_pause_sec)
+                or current[-1].end - current[0].start >= max_utt_sec
+            )
+            if spk != speaker or gap > pause_sec or sentence_break:
+                flush()
+                current = []
         current.append(word)
         speaker = spk
     flush()

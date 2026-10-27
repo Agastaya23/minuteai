@@ -40,6 +40,6 @@ class Settings(BaseSettings):
 @lru_cache
 def get_settings() -> Settings:
     settings = Settings()
-    if settings.ddb_endpoint_url == "":
-        settings.ddb_endpoint_url = None
+    settings.ddb_endpoint_url = settings.ddb_endpoint_url or None
+    settings.s3_endpoint_url = settings.s3_endpoint_url or None
     return settings
