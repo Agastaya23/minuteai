@@ -27,7 +27,11 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 from eval.common import RESULTS_DIR  # noqa: E402
 from eval.datasets import ami, samples  # noqa: E402
 from minuteai.extract.chunker import render_utterances  # noqa: E402
-from minuteai.extract.llm_client import LLMClient, LLMError  # noqa: E402
+from minuteai.extract.llm_client import (  # noqa: E402
+    LLMClient,
+    LLMError,
+    LLMQuotaExhaustedError,
+)
 from minuteai.extract.speakers import name_speakers  # noqa: E402
 
 CONTEXT = 3
@@ -81,6 +85,8 @@ def main(argv=None) -> dict:
     p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawTextHelpFormatter)
     p.add_argument("--sheet", type=Path, default=RESULTS_DIR / "labelling_sheet.csv")
     p.add_argument("--limit", type=int, default=None)
+    p.add_argument("--model", default=None,
+                   help="judge model; ideally different from the extraction model")
     args = p.parse_args(argv)
     rows = list(csv.DictReader(args.sheet.open()))[: args.limit]
     out_path = args.sheet.with_suffix(".autojudge.csv")
@@ -89,7 +95,8 @@ def main(argv=None) -> dict:
         done = {r["item_id"]: r for r in csv.DictReader(out_path.open()) if r.get("llm_judge")}
 
     transcripts = transcripts_for({r["meeting_id"] for r in rows})
-    llm = LLMClient(log_path=RESULTS_DIR.parent / "cache" / "llm_calls_judge.jsonl")
+    llm = LLMClient(log_path=RESULTS_DIR.parent / "cache" / "llm_calls_judge.jsonl",
+                    model=args.model)
     fields = [*rows[0].keys(), "llm_judge", "llm_judge_reason"]
     with out_path.open("w", newline="") as f:
         w = csv.DictWriter(f, fieldnames=fields)
@@ -106,6 +113,13 @@ def main(argv=None) -> dict:
                         JUDGE_PROMPT.format(statement=r["text"], excerpt=excerpt(r, t)),
                         JudgeLabel, purpose="judge", meeting_id=r["meeting_id"])
                     label, reason = j.label, j.reason
+                except LLMQuotaExhaustedError as e:
+                    print(f"stopping: {e} (re-run later; finished rows are kept)")
+                    w.writerow({**r, "llm_judge": "", "llm_judge_reason": "not judged yet"})
+                    for rest in rows[i + 1:]:
+                        w.writerow(done.get(rest["item_id"], {**rest, "llm_judge": "",
+                                                               "llm_judge_reason": ""}))
+                    break
                 except LLMError as e:
                     reason = f"judge failed: {e}"[:300]
             w.writerow({**r, "llm_judge": label, "llm_judge_reason": reason})

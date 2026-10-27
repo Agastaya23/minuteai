@@ -26,7 +26,6 @@ from eval.metrics import cost as cost_metrics  # noqa: E402
 from eval.metrics import grounding as grounding_metrics  # noqa: E402
 from eval.metrics import search as search_metrics  # noqa: E402
 from eval.runners import run_ablation  # noqa: E402
-from minuteai.config import get_settings  # noqa: E402
 
 log = logging.getLogger("run_all")
 
@@ -139,18 +138,22 @@ def eval_commitments(dataset: str) -> dict | None:
 # -- report -------------------------------------------------------------------------
 
 def write_report(sections: dict, args) -> Path:
-    s = get_settings()
     lines = ["# MinuteAI evaluation report",
              "",
              f"Generated {datetime.now(UTC):%Y-%m-%d %H:%M} UTC · dataset **{args.dataset}** · "
              f"transcript **{args.transcript}** · "
-             f"LLM **{'replay' if args.replay else s.llm_model}**",
+             f"LLM **{sections['ablation']['model']}** · chunk size "
+             f"{sections['ablation']['chunk_tokens']} tokens",
              ""]
     if args.replay:
         lines += ["> ⚠️ Offline smoke test on recorded sample responses. These numbers validate "
                   "the harness, they are **not** experimental results.", ""]
 
     abl = sections["ablation"]
+    lines += [f"Meetings: {', '.join(abl['meetings'])}", ""]
+    if abl.get("skipped"):
+        lines += ["Skipped: " + "; ".join(f"{k} ({v[:80]})" for k, v in abl["skipped"].items()),
+                  ""]
     lines += ["## 1. Ablation: does grounding reduce hallucination?", "",
               "A = single prompt, no evidence · B = chunked extraction with evidence, no filter · "
               "C = B + grounding filter in each strictness mode.", "",
@@ -237,6 +240,8 @@ def main(argv=None) -> None:
     p.add_argument("--transcript", choices=["reference", "asr"], default="reference")
     p.add_argument("--replay", action="store_true")
     p.add_argument("--qmsum-meetings", type=int, default=None)
+    p.add_argument("--model", default=None, help="override LLM_MODEL")
+    p.add_argument("--chunk-tokens", type=int, default=6000)
     args = p.parse_args(argv)
     ensure_dirs()
 
@@ -245,6 +250,9 @@ def main(argv=None) -> None:
         ablation_args += ["--meetings", str(args.meetings)]
     if args.replay:
         ablation_args.append("--replay")
+    if args.model:
+        ablation_args += ["--model", args.model]
+    ablation_args += ["--chunk-tokens", str(args.chunk_tokens)]
     sections: dict = {"ablation": run_ablation.main(ablation_args)}
     judge_path = RESULTS_DIR / "autojudge.json"
     if judge_path.exists():  # written by run_autojudge.py (LLM-judge proxy, not human)

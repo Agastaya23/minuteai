@@ -44,7 +44,11 @@ from eval.metrics import grounding as grounding_metrics  # noqa: E402
 from eval.metrics import summarization  # noqa: E402
 from minuteai.config import get_settings  # noqa: E402
 from minuteai.extract.extractor import Extractor  # noqa: E402
-from minuteai.extract.llm_client import LLMClient  # noqa: E402
+from minuteai.extract.llm_client import (  # noqa: E402
+    LLMClient,
+    LLMError,
+    LLMQuotaExhaustedError,
+)
 from minuteai.ground.filter import GroundingFilter, Strictness  # noqa: E402
 from minuteai.models.artifacts import MeetingSummary  # noqa: E402
 from minuteai.models.transcript import Transcript  # noqa: E402
@@ -91,27 +95,28 @@ def get_transcript(m: EvalMeeting, source: str) -> Transcript:
     return cached_model("transcripts", key, Transcript, run)
 
 
-def make_llm(meeting_id: str, config: str, replay: bool) -> LLMClient:
+def make_llm(meeting_id: str, config: str, replay: bool, model: str | None) -> LLMClient:
     log_path = CACHE_DIR / f"llm_calls_{config}.jsonl"
     if replay:
         from minuteai.samples import ReplayProvider
 
         return LLMClient(ReplayProvider(meeting_id), log_path=log_path)
-    return LLMClient(log_path=log_path)
+    return LLMClient(log_path=log_path, model=model)
 
 
-def extract(m: EvalMeeting, t: Transcript, config: str, replay: bool, refresh: bool
-            ) -> MeetingSummary:
-    model = "replay" if replay else get_settings().llm_model
-    key = cache_key(m.meeting_id, config, model, t.model_version, len(t.utterances))
+def extract(m: EvalMeeting, t: Transcript, config: str, args) -> MeetingSummary:
+    model = "replay" if args.replay else (args.model or get_settings().llm_model)
+    key = cache_key(m.meeting_id, config, model, t.model_version, len(t.utterances),
+                    args.chunk_tokens)
 
     def run() -> MeetingSummary:
-        ex = Extractor(llm=make_llm(m.meeting_id, config, replay))
+        ex = Extractor(llm=make_llm(m.meeting_id, config, args.replay, args.model),
+                       max_tokens=args.chunk_tokens)
         if config == "A":
             return ex.extract_meeting_baseline(t)
         return ex.extract_meeting(t)
 
-    return cached_model(f"extract/{config}", key, MeetingSummary, run, refresh)
+    return cached_model(f"extract/{config}", key, MeetingSummary, run, args.refresh)
 
 
 def count(s: MeetingSummary) -> int:
@@ -133,12 +138,20 @@ def run(args) -> dict:
     per_config: dict[str, list[dict]] = {c: [] for c in CONFIGS}
     summaries: dict[str, dict[str, MeetingSummary]] = {c: {} for c in CONFIGS}
     transcripts: dict[str, Transcript] = {}
+    skipped: dict[str, str] = {}
     for m in meetings:
         t = get_transcript(m, args.transcript)
-        transcripts[m.meeting_id] = t
         log.info("%s: %d utterances", m.meeting_id, len(t.utterances))
-        a = extract(m, t, "A", args.replay, args.refresh)
-        b = extract(m, t, "B", args.replay, args.refresh)
+        try:
+            a = extract(m, t, "A", args)
+            b = extract(m, t, "B", args)
+        except LLMError as e:  # e.g. daily quota: keep the meetings that did finish
+            log.error("%s skipped: %s", m.meeting_id, e)
+            skipped[m.meeting_id] = str(e)
+            if isinstance(e, LLMQuotaExhaustedError):
+                break
+            continue
+        transcripts[m.meeting_id] = t
         outputs = {"A": (a, count(a)), "B": (b, count(b))}
         for mode in MODES:
             kept, _ = GroundingFilter(t, mode=mode, log_path=dropped_logs[mode]).apply(b)
@@ -207,8 +220,10 @@ def run(args) -> dict:
 
     reasons = {str(m): dict(grounding_metrics.drop_reasons(dropped_logs[m])) for m in MODES}
     write_outputs(table, reasons, args)
-    return {"table": table, "drop_reasons": reasons, "meetings": [m.meeting_id for m in meetings],
-            "hours": hours, "dataset": args.dataset, "transcript": args.transcript}
+    return {"table": table, "drop_reasons": reasons, "meetings": list(transcripts),
+            "skipped": skipped, "hours": hours, "dataset": args.dataset,
+            "transcript": args.transcript, "model": "replay" if args.replay else
+            (args.model or get_settings().llm_model), "chunk_tokens": args.chunk_tokens}
 
 
 def fmt(v) -> str:
@@ -306,6 +321,9 @@ def parse_args(argv=None):
     p.add_argument("--replay", action="store_true",
                    help="samples only: use recorded LLM responses (offline smoke test)")
     p.add_argument("--refresh", action="store_true", help="ignore cached extractions")
+    p.add_argument("--model", default=None, help="override LLM_MODEL for this run")
+    p.add_argument("--chunk-tokens", type=int, default=6000,
+                   help="chunk size for config B (larger = fewer LLM calls)")
     p.add_argument("--label-n", type=int, default=150, help="statements in the labelling sheet")
     return p.parse_args(argv)
 

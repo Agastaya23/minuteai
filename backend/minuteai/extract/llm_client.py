@@ -103,6 +103,10 @@ class RateLimiter:
             self._sleep(slot - now)
 
 
+class LLMQuotaExhaustedError(LLMError):
+    """A daily/billing quota is used up; retrying soon will not help."""
+
+
 class LLMRefusalError(LLMError):
     pass
 
@@ -203,6 +207,15 @@ class GeminiProvider:
                 },
             )
         except errors.APIError as e:
+            if e.code == 429 and "PerDay" in str(e):
+                # Daily quotas don't recover by waiting minutes: fail fast and say why.
+                limit = re.search(r"quotaValue': '(\d+)'", str(e))
+                raise LLMQuotaExhaustedError(
+                    f"Gemini daily quota exhausted for {self.model}"
+                    + (f" ({limit.group(1)} requests/day on the free tier)" if limit else "")
+                    + ". It resets at midnight Pacific time; or set LLM_MODEL to another "
+                    "model (quotas are per model)."
+                ) from e
             if e.code in (429, 500, 502, 503, 504):
                 raise LLMRateLimitError(str(e)) from e
             raise LLMError(f"Gemini API error {e.code}: {e}") from e
@@ -268,8 +281,9 @@ class LLMClient:
         max_delay: float = 120.0,
         sleep=time.sleep,
         rpm: float | None = None,
+        model: str | None = None,
     ) -> None:
-        self.provider = provider or make_provider()
+        self.provider = provider or make_provider(model)
         self.log_path = log_path or get_settings().data_path("llm_calls.jsonl")
         self.max_backoff_attempts = max_backoff_attempts
         self.base_delay = base_delay
