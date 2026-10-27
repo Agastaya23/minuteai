@@ -45,14 +45,16 @@ def show(summary: MeetingSummary, transcript: Transcript) -> None:
         print(f"• {t.title}  [utt {t.start_utt}–{t.end_utt}]")
     print(f"\n== Decisions ({len(summary.decisions)}) ==")
     for d in summary.decisions:
+        flags = f"  ⚑ {','.join(d.flags)}" if d.flags else ""
         print(f"• [{d.status}] {d.statement} (conf {d.confidence:.2f}, {d.participants})\n"
-              f"    ↳ {ev(d.evidence)}")
+              f"    ↳ {ev(d.evidence)}{flags}")
     print(f"\n== Action items ({len(summary.action_items)}) ==")
     for a in summary.action_items:
         owner = f"{a.owner} ({a.owner_resolution_method}, {a.owner_confidence:.2f})" \
             if a.owner else "UNASSIGNED"
         due = f" due {a.due_date} ({a.due_raw})" if a.due_raw else ""
-        print(f"• {a.description} — {owner}{due}\n    ↳ {ev(a.evidence)}")
+        flags = f"  ⚑ {','.join(a.flags)}" if a.flags else ""
+        print(f"• {a.description} — {owner}{due}\n    ↳ {ev(a.evidence)}{flags}")
 
 
 def main() -> None:

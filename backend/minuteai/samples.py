@@ -170,7 +170,8 @@ SAMPLE_LLM_RESPONSES: dict[str, dict[str, dict]] = {
              "participants": ["SPEAKER_00", "SPEAKER_01", "SPEAKER_02"], "status": "agreed",
              "confidence": 0.95,
              "evidence": _ev((2, "Postgres 16 looks like the best fit"),
-                             (5, "I agree with Ananya"),
+                             (4, "Postgres gives us better JSON support"),
+                             (5, "Postgres also matches what the analytics team uses"),
                              (6, "we are agreed. We will move the payments service to Postgres 16"))},
             {"statement": "Defer the decision on making the fraud check asynchronous until the "
                           "fraud team provides numbers",
@@ -187,7 +188,7 @@ SAMPLE_LLM_RESPONSES: dict[str, dict[str, dict]] = {
              "evidence": _ev((12, "we will use Redis for the risk score cache"))},
         ]},
         "LLMActionItemsResponse": {"action_items": [
-            {"description": "Write the Postgres migration script", "owner": "Rahul",
+            {"description": "Write the migration script", "owner": "Rahul",
              "owner_speaker_label": "SPEAKER_01", "owner_resolution_method": "self_commitment",
              "owner_confidence": 0.95, "due_raw": "by Friday", "confidence": 0.95,
              "evidence": _ev((7, "I will write the migration script by Friday"))},
@@ -282,8 +283,8 @@ SAMPLE_LLM_RESPONSES: dict[str, dict[str, dict]] = {
 }
 
 _TOPIC_KEYWORDS = [
-    (("migration", "postgres", "mysql", "database"), "Database migration to Postgres"),
     (("latency", "fraud"), "Checkout latency and the fraud check"),
+    (("migration", "postgres", "mysql", "database"), "Database migration to Postgres"),
     (("on-call", "demo", "rotation"), "On-call rotation and demo schedule"),
     (("staging",), "Staging environment"),
     (("release", "retro"), "Release follow-ups"),

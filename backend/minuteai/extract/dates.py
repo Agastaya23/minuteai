@@ -12,13 +12,16 @@ _NUM_WORDS = {"a": 1, "an": 1, "one": 1, "two": 2, "three": 3, "four": 4, "five"
               "six": 6, "seven": 7, "ten": 10, "fourteen": 14, "couple": 2, "few": 3}
 
 
-def _next_weekday(ref: date, weekday: int, skip_week: bool = False) -> date:
-    days = (weekday - ref.weekday()) % 7
-    if days == 0:
-        days = 7
-    if skip_week:
-        days += 7
+def _next_weekday(ref: date, weekday: int) -> date:
+    """The next occurrence of `weekday` strictly after `ref`."""
+    days = (weekday - ref.weekday()) % 7 or 7
     return ref + timedelta(days=days)
+
+
+def _weekday_of_next_week(ref: date, weekday: int) -> date:
+    """"next Friday" = the Friday of the following calendar week (weeks start Monday)."""
+    next_monday = ref + timedelta(days=7 - ref.weekday())
+    return next_monday + timedelta(days=weekday)
 
 
 def _end_of_month(ref: date) -> date:
@@ -43,7 +46,7 @@ def resolve_relative_date(phrase: str | None, ref: date) -> date | None:
     if re.search(r"end of (the |this )?week|this week|eow", p):
         return ref + timedelta(days=(4 - ref.weekday()) % 7)
     if re.search(r"end of next week|next week", p):
-        return _next_weekday(ref, 4, skip_week=ref.weekday() <= 4)
+        return _weekday_of_next_week(ref, 4)
     if re.search(r"end of (the |this )?month|this month|eom", p):
         return _end_of_month(ref)
     if re.search(r"next month", p):
@@ -55,7 +58,9 @@ def resolve_relative_date(phrase: str | None, ref: date) -> date | None:
             return ref + timedelta(days=n * (7 if m.group(2) == "week" else 1))
     for i, day in enumerate(WEEKDAYS):
         if re.search(rf"\b{day}\b", p):
-            return _next_weekday(ref, i, skip_week=bool(re.search(rf"next {day}", p)))
+            if re.search(rf"next {day}", p):
+                return _weekday_of_next_week(ref, i)
+            return _next_weekday(ref, i)
     if not re.search(r"\d|jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec", p):
         return None
     try:

@@ -66,7 +66,9 @@ def test_topic_segmentation_finds_shifts():
 def test_relative_dates():
     assert resolve_relative_date("by Friday", MON) == date(2026, 10, 30)
     assert resolve_relative_date("by Wednesday", MON) == date(2026, 10, 28)
-    assert resolve_relative_date("next Monday", MON) == date(2026, 11, 9)
+    assert resolve_relative_date("next Monday", MON) == date(2026, 11, 2)
+    assert resolve_relative_date("next Friday", date(2026, 10, 27)) == date(2026, 11, 6)
+    assert resolve_relative_date("Monday", date(2026, 10, 27)) == date(2026, 11, 2)
     assert resolve_relative_date("tomorrow", MON) == date(2026, 10, 27)
     assert resolve_relative_date("end of the month", MON) == date(2026, 10, 31)
     assert resolve_relative_date("by end of next week", MON) == date(2026, 11, 6)
