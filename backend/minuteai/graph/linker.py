@@ -31,7 +31,10 @@ def _entities(text: str) -> set[str]:
 
 
 def owner_of(item: ActionItem, meeting_id: str, people: PeopleIndex) -> str | None:
-    return people.for_label(meeting_id, item.owner_speaker_label) or people.for_name(item.owner)
+    by_label = people.for_label(meeting_id, item.owner_speaker_label)
+    if by_label and not by_label.startswith("unresolved-"):
+        return by_label
+    return people.for_name(item.owner) or by_label
 
 
 def match_score(

@@ -43,6 +43,19 @@ class ProcessingError(RuntimeError):
     pass
 
 
+def _series_names(repo: MeetingRepository, meeting) -> set[str]:
+    """Speaker names already established in other meetings of the same series."""
+    if not meeting.series_id:
+        return set()
+    names: set[str] = set()
+    for other in repo.list_series(meeting.series_id):
+        if other.meeting_id == meeting.meeting_id or other.status != "ready":
+            continue
+        t = repo.get_transcript(other.meeting_id)
+        names |= {u.speaker_name for u in (t.utterances if t else []) if u.speaker_name}
+    return names
+
+
 def process_meeting(
     services: Services,
     meeting_id: str,
@@ -67,7 +80,8 @@ def process_meeting(
 
         # Persist speaker names resolved from the dialogue itself (self-introductions,
         # direct address) so the UI, search and graph all see the same names.
-        named = name_speakers(transcript, meeting.participants or None)
+        named = name_speakers(transcript, meeting.participants or None,
+                              known_names=_series_names(repo, meeting))
         if named != transcript:
             transcript = named
             repo.put_transcript(transcript)

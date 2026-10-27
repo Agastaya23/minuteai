@@ -21,14 +21,17 @@ from __future__ import annotations
 import argparse
 import csv
 import re
+import sys
 import urllib.request
 import xml.etree.ElementTree as ET
 import zipfile
 from pathlib import Path
 
-from eval.common import DATA_DIR, EvalMeeting
-from minuteai.models.transcript import Transcript, Word
-from minuteai.transcribe.diarization import SpeakerTurn, group_utterances
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))  # runnable as a script
+
+from eval.common import DATA_DIR, EvalMeeting  # noqa: E402
+from minuteai.models.transcript import Transcript, Word  # noqa: E402
+from minuteai.transcribe.diarization import SpeakerTurn, group_utterances  # noqa: E402
 
 AMI_DIR = DATA_DIR / "ami"
 ANNOTATIONS_URL = "https://groups.inf.ed.ac.uk/ami/AMICorpusAnnotations/ami_public_manual_1.6.2.zip"

@@ -79,10 +79,16 @@ def resolve_people(bundles: list[MeetingBundle]) -> dict[str, PersonIdentity]:
     scores: dict[str, list[float]] = {}
     unnamed: list[tuple[MeetingBundle, str]] = []
 
+    # Pass 1: names each meeting establishes on its own; pass 2 lets those names
+    # corroborate weak signals ("Rahul here.") in the other meetings of the series.
+    series_names = {sn.name for b in bundles
+                    for sn in detect_names(b.transcript, b.meeting.participants or None).values()}
+    series_names |= {p.split()[0] for b in bundles for p in b.meeting.participants}
+
     for b in bundles:
         participants = b.meeting.participants or None
         allowed = {normalize_name(p) for p in participants} if participants else None
-        found = detect_names(b.transcript, participants)
+        found = detect_names(b.transcript, participants, series_names)
         for label in b.transcript.speakers():
             sn = found.get(label)
             if sn is None or sn.confidence < MIN_CONFIDENCE:
