@@ -345,10 +345,21 @@ class ReplayProvider:
         from minuteai.extract.llm_client import ProviderResponse
 
         name = response_model.__name__
+        recorded = SAMPLE_LLM_RESPONSES[self.meeting_id]
         if name == "LLMTopicTitlesResponse":
             body = _title_segments(prompt)
+        elif name == "LLMBaselineResponse":
+            # Ablation config A: the same content, without any evidence.
+            body = {
+                "summary": [x["text"] for x in recorded["LLMSummaryResponse"]["sentences"]],
+                "decisions": [x["statement"] for x in recorded["LLMDecisionsResponse"]["decisions"]],
+                "action_items": [
+                    x["description"] + (f" ({x['owner']})" if x["owner"] else "")
+                    for x in recorded["LLMActionItemsResponse"]["action_items"]
+                ],
+            }
         else:
-            body = SAMPLE_LLM_RESPONSES[self.meeting_id].get(name)
+            body = recorded.get(name)
             if body is None:
                 body = {f: [] for f in response_model.model_fields if
                         f in ("sentences", "decisions", "action_items")}

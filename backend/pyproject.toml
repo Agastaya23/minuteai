@@ -30,6 +30,13 @@ ml = [
     "spacy>=3.7",
 ]
 
+# Evaluation harness (eval/). BERTScore is optional and pulls in torch.
+eval = [
+    "rouge-score>=0.1.2",
+    "matplotlib>=3.8",
+]
+bertscore = ["bert-score>=0.3.13"]
+
 [dependency-groups]
 dev = [
     "pytest>=8.2",

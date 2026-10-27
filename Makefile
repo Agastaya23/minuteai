@@ -17,7 +17,7 @@ dev-frontend:
 
 test:
 	cd backend && $(UV) run pytest
-	cd eval && ../backend/.venv/bin/python -m pytest -q
+	cd backend && $(UV) run pytest ../eval/tests
 
 lint:
 	cd backend && $(UV) run ruff check minuteai tests ../scripts ../eval
