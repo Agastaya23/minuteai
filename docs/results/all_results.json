@@ -1,0 +1,288 @@
+{
+  "ablation": {
+    "table": [
+      {
+        "config": "A",
+        "meetings": 5,
+        "action_f1": 0.3333333333333333,
+        "action_n_gold": 1.8,
+        "action_n_pred": 1.8,
+        "action_precision": 0.3333333333333333,
+        "action_recall": 0.3333333333333333,
+        "action_tp": 1.0,
+        "artifacts": 35,
+        "entity_entity_supported_rate": 0.8198412698412698,
+        "entity_n": 7.0,
+        "retention": 1.0,
+        "rouge1": 0.2639151429954367,
+        "rouge2": 0.03862558697200685,
+        "rougeL": 0.22981991751727815,
+        "validator_mean_confidence": 0.0,
+        "validator_n": 7.0,
+        "validator_pass_rate": 0.0,
+        "unsupported_entity_rate": 0.18015873015873018,
+        "llm_calls": 5,
+        "tokens": 111318,
+        "cost_usd": 0.0,
+        "hallucination_rate": NaN,
+        "labelled_n": 0,
+        "llm_judge_hallucination_rate": 0.4,
+        "llm_judge_n": 35
+      },
+      {
+        "config": "B",
+        "meetings": 5,
+        "action_f1": 0.17142857142857143,
+        "action_n_gold": 1.8,
+        "action_n_pred": 1.2,
+        "action_precision": 0.15,
+        "action_recall": 0.2,
+        "action_tp": 0.6,
+        "artifacts": 28,
+        "entity_entity_supported_rate": 0.8466666666666667,
+        "entity_n": 5.6,
+        "retention": 1.0,
+        "rouge1": 0.24442353766626307,
+        "rouge2": 0.05830117532133403,
+        "rougeL": 0.21959922139469928,
+        "validator_mean_confidence": 0.9209646666666667,
+        "validator_n": 5.6,
+        "validator_pass_rate": 0.45166666666666666,
+        "unsupported_entity_rate": 0.15333333333333332,
+        "llm_calls": 20,
+        "tokens": 379136,
+        "cost_usd": 0.0,
+        "hallucination_rate": NaN,
+        "labelled_n": 0,
+        "llm_judge_hallucination_rate": 0.35714285714285715,
+        "llm_judge_n": 28
+      },
+      {
+        "config": "C-STRICT",
+        "meetings": 5,
+        "action_f1": 0.13333333333333333,
+        "action_n_gold": 1.8,
+        "action_n_pred": 0.8,
+        "action_precision": 0.13333333333333333,
+        "action_recall": 0.13333333333333333,
+        "action_tp": 0.4,
+        "artifacts": 14,
+        "entity_entity_supported_rate": 1.0,
+        "entity_n": 2.8,
+        "retention": 0.45166666666666666,
+        "rouge1": 0.1095679012345679,
+        "rouge2": 0.02932776840313479,
+        "rougeL": 0.09154320987654321,
+        "validator_mean_confidence": 1.0,
+        "validator_n": 2.8,
+        "validator_pass_rate": 1.0,
+        "unsupported_entity_rate": 0.0,
+        "llm_calls": 20,
+        "tokens": 379136,
+        "cost_usd": 0.0,
+        "hallucination_rate": NaN,
+        "labelled_n": 0,
+        "llm_judge_hallucination_rate": 0.14285714285714285,
+        "llm_judge_n": 14
+      },
+      {
+        "config": "C-BALANCED",
+        "meetings": 5,
+        "action_f1": 0.17142857142857143,
+        "action_n_gold": 1.8,
+        "action_n_pred": 1.0,
+        "action_precision": 0.15,
+        "action_recall": 0.2,
+        "action_tp": 0.6,
+        "artifacts": 24,
+        "entity_entity_supported_rate": 0.9,
+        "entity_n": 4.8,
+        "retention": 0.8400000000000001,
+        "rouge1": 0.18091556651427199,
+        "rouge2": 0.04074858814962789,
+        "rougeL": 0.16124038971935412,
+        "validator_mean_confidence": 0.95089,
+        "validator_n": 4.8,
+        "validator_pass_rate": 0.5583333333333333,
+        "unsupported_entity_rate": 0.09999999999999998,
+        "llm_calls": 20,
+        "tokens": 379136,
+        "cost_usd": 0.0,
+        "hallucination_rate": NaN,
+        "labelled_n": 0,
+        "llm_judge_hallucination_rate": 0.3333333333333333,
+        "llm_judge_n": 24
+      },
+      {
+        "config": "C-PERMISSIVE",
+        "meetings": 5,
+        "action_f1": 0.17142857142857143,
+        "action_n_gold": 1.8,
+        "action_n_pred": 1.2,
+        "action_precision": 0.15,
+        "action_recall": 0.2,
+        "action_tp": 0.6,
+        "artifacts": 28,
+        "entity_entity_supported_rate": 0.8466666666666667,
+        "entity_n": 5.6,
+        "retention": 1.0,
+        "rouge1": 0.24442353766626307,
+        "rouge2": 0.05830117532133403,
+        "rougeL": 0.21959922139469928,
+        "validator_mean_confidence": 0.9209646666666667,
+        "validator_n": 5.6,
+        "validator_pass_rate": 0.45166666666666666,
+        "unsupported_entity_rate": 0.15333333333333332,
+        "llm_calls": 20,
+        "tokens": 379136,
+        "cost_usd": 0.0,
+        "hallucination_rate": NaN,
+        "labelled_n": 0,
+        "llm_judge_hallucination_rate": 0.35714285714285715,
+        "llm_judge_n": 28
+      }
+    ],
+    "drop_reasons": {
+      "STRICT": {
+        "SPEAKER_MISMATCH": 6,
+        "ENTITY_NOT_SUPPORTED": 9,
+        "QUOTE_NOT_FOUND": 3,
+        "UTT_NOT_FOUND": 1
+      },
+      "BALANCED": {
+        "QUOTE_NOT_FOUND": 3,
+        "UTT_NOT_FOUND": 1,
+        "SPEAKER_MISMATCH": 1,
+        "ENTITY_NOT_SUPPORTED": 2
+      },
+      "PERMISSIVE": {}
+    },
+    "meetings": [
+      "ES2002a",
+      "ES2002b",
+      "ES2002c",
+      "ES2002d",
+      "ES2003a"
+    ],
+    "skipped": {},
+    "hours": {
+      "ES2002a": 0.30818055555555557,
+      "ES2002b": 0.6016166666666667,
+      "ES2002c": 0.6683611111111111,
+      "ES2002d": 0.6669055555555556,
+      "ES2003a": 0.31296944444444447
+    },
+    "dataset": "ami",
+    "transcript": "reference",
+    "model": "gemini-3.5-flash-lite",
+    "chunk_tokens": 30000
+  },
+  "search": {
+    "modes": [
+      {
+        "retriever": "bm25",
+        "embedder": "all-MiniLM-L6-v2",
+        "n": 244,
+        "mrr": 0.37953747072599553,
+        "hit@1": 0.3155737704918033,
+        "hit@3": 0.4139344262295082,
+        "hit@5": 0.47540983606557374,
+        "hit@10": 0.5409836065573771
+      },
+      {
+        "retriever": "dense",
+        "embedder": "all-MiniLM-L6-v2",
+        "n": 244,
+        "mrr": 0.33042382253447833,
+        "hit@1": 0.2459016393442623,
+        "hit@3": 0.3770491803278688,
+        "hit@5": 0.45491803278688525,
+        "hit@10": 0.5245901639344263
+      },
+      {
+        "retriever": "hybrid",
+        "embedder": "all-MiniLM-L6-v2",
+        "n": 244,
+        "mrr": 0.3953616965912049,
+        "hit@1": 0.30327868852459017,
+        "hit@3": 0.4385245901639344,
+        "hit@5": 0.5245901639344263,
+        "hit@10": 0.6229508196721312
+      }
+    ],
+    "retriever": "hybrid",
+    "embedder": "all-MiniLM-L6-v2",
+    "n": 244,
+    "mrr": 0.3953616965912049,
+    "hit@1": 0.30327868852459017,
+    "hit@3": 0.4385245901639344,
+    "hit@5": 0.5245901639344263,
+    "hit@10": 0.6229508196721312
+  },
+  "commitments": null,
+  "cost": {
+    "totals": {
+      "calls": 25,
+      "input_tokens": 484159,
+      "output_tokens": 6295,
+      "cost_usd": 0.0,
+      "latency_ms": 466884.89999999997,
+      "failures": 0
+    },
+    "by_meeting": {
+      "ES2002a": {
+        "calls": 5,
+        "input_tokens": 57695,
+        "output_tokens": 1529,
+        "cost_usd": 0.0,
+        "latency_ms": 86038.5,
+        "failures": 0
+      },
+      "ES2002b": {
+        "calls": 5,
+        "input_tokens": 114800,
+        "output_tokens": 1263,
+        "cost_usd": 0.0,
+        "latency_ms": 95863.79999999999,
+        "failures": 0
+      },
+      "ES2002c": {
+        "calls": 5,
+        "input_tokens": 122764,
+        "output_tokens": 1263,
+        "cost_usd": 0.0,
+        "latency_ms": 95910.2,
+        "failures": 0
+      },
+      "ES2002d": {
+        "calls": 5,
+        "input_tokens": 159620,
+        "output_tokens": 1442,
+        "cost_usd": 0.0,
+        "latency_ms": 95221.09999999999,
+        "failures": 0
+      },
+      "ES2003a": {
+        "calls": 5,
+        "input_tokens": 29280,
+        "output_tokens": 798,
+        "cost_usd": 0.0,
+        "latency_ms": 93851.3,
+        "failures": 0
+      }
+    },
+    "by_purpose": {
+      "baseline": 5,
+      "summary": 5,
+      "decisions": 5,
+      "action_items": 5,
+      "topics": 5
+    },
+    "retries": 0,
+    "per_meeting_hour": {
+      "tokens": 191730.8870095516,
+      "cost_usd": 0.0,
+      "latency_s": 182.51712904444818
+    }
+  }
+}

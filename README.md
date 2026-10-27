@@ -2,6 +2,8 @@
 
 **Meeting minutes where every line is backed by what was actually said.**
 
+> 📖 Code walkthrough and evaluation results: **[PROJECT_GUIDE.md](PROJECT_GUIDE.md)**
+
 MinuteAI transcribes a recording with word-level timestamps and speaker diarization, then has an LLM extract a summary, decisions and action items. Each extracted claim must cite the utterances that support it, with a verbatim quote. A deterministic **grounding validator** checks every citation against the transcript. Anything it can't verify is removed from the minutes and logged, never silently shown.
 
 Across a recurring meeting series, a **cross-meeting accountability graph** tracks every commitment: fulfilled, slipped, silently dropped, or reversed. Each change of state links to the moment that caused it.
@@ -63,7 +65,7 @@ docs/           ARCHITECTURE.md, DEPLOYMENT.md, BUILD_GUIDE.md
 ## Development
 
 ```bash
-make test        # ~130 backend + eval tests; AWS mocked with moto, LLM with fakes
+make test        # 134 backend + eval tests; AWS mocked with moto, LLM with fakes
 make lint        # ruff + eslint
 cd backend && uv run python ../scripts/transcribe_local.py meeting.wav     # inspect ASR
 cd backend && uv run python ../scripts/extract_local.py --sample demo-sprint-planning --replay --filter
@@ -81,3 +83,5 @@ uv run python ../eval/runners/run_all.py --meetings 5             # → eval/res
 See [eval/README.md](eval/README.md) for the labelling workflow. The headline number is the human-labelled hallucination rate of **B (evidence, no filter) vs. C (with the grounding filter)**.
 
 More detail on the design: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
+
+**➡ [PROJECT_GUIDE.md](PROJECT_GUIDE.md)** walks through the code with permalinks to every key function and reports the evaluation results (AMI ablation, grounding-failure taxonomy, QMSum retrieval, accountability graph).

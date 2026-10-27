@@ -1,0 +1,487 @@
+{
+  "series": "ES2002",
+  "meetings": [
+    "ES2002a",
+    "ES2002b",
+    "ES2002c",
+    "ES2002d"
+  ],
+  "people": [
+    {
+      "person_id": "laura",
+      "display_name": "Laura",
+      "aliases": [],
+      "speaker_labels": {
+        "ES2002a": "SPEAKER_01"
+      },
+      "method": "self_introduction",
+      "confidence": 0.99
+    },
+    {
+      "person_id": "andrew",
+      "display_name": "Andrew",
+      "aliases": [],
+      "speaker_labels": {
+        "ES2002a": "SPEAKER_03"
+      },
+      "method": "self_introduction",
+      "confidence": 0.99
+    },
+    {
+      "person_id": "david",
+      "display_name": "David",
+      "aliases": [],
+      "speaker_labels": {
+        "ES2002a": "SPEAKER_00"
+      },
+      "method": "self_introduction",
+      "confidence": 0.99
+    },
+    {
+      "person_id": "craig",
+      "display_name": "Craig",
+      "aliases": [],
+      "speaker_labels": {
+        "ES2002a": "SPEAKER_02"
+      },
+      "method": "self_introduction",
+      "confidence": 0.99
+    },
+    {
+      "person_id": "unresolved-es2002b-speaker_01",
+      "display_name": null,
+      "aliases": [
+        "SPEAKER_01"
+      ],
+      "speaker_labels": {
+        "ES2002b": "SPEAKER_01"
+      },
+      "method": "unresolved",
+      "confidence": 0.0
+    },
+    {
+      "person_id": "unresolved-es2002b-speaker_03",
+      "display_name": null,
+      "aliases": [
+        "SPEAKER_03"
+      ],
+      "speaker_labels": {
+        "ES2002b": "SPEAKER_03"
+      },
+      "method": "unresolved",
+      "confidence": 0.0
+    },
+    {
+      "person_id": "unresolved-es2002b-speaker_00",
+      "display_name": null,
+      "aliases": [
+        "SPEAKER_00"
+      ],
+      "speaker_labels": {
+        "ES2002b": "SPEAKER_00"
+      },
+      "method": "unresolved",
+      "confidence": 0.0
+    },
+    {
+      "person_id": "unresolved-es2002b-speaker_02",
+      "display_name": null,
+      "aliases": [
+        "SPEAKER_02"
+      ],
+      "speaker_labels": {
+        "ES2002b": "SPEAKER_02"
+      },
+      "method": "unresolved",
+      "confidence": 0.0
+    },
+    {
+      "person_id": "unresolved-es2002c-speaker_00",
+      "display_name": null,
+      "aliases": [
+        "SPEAKER_00"
+      ],
+      "speaker_labels": {
+        "ES2002c": "SPEAKER_00"
+      },
+      "method": "unresolved",
+      "confidence": 0.0
+    },
+    {
+      "person_id": "unresolved-es2002c-speaker_03",
+      "display_name": null,
+      "aliases": [
+        "SPEAKER_03"
+      ],
+      "speaker_labels": {
+        "ES2002c": "SPEAKER_03"
+      },
+      "method": "unresolved",
+      "confidence": 0.0
+    },
+    {
+      "person_id": "unresolved-es2002c-speaker_01",
+      "display_name": null,
+      "aliases": [
+        "SPEAKER_01"
+      ],
+      "speaker_labels": {
+        "ES2002c": "SPEAKER_01"
+      },
+      "method": "unresolved",
+      "confidence": 0.0
+    },
+    {
+      "person_id": "unresolved-es2002c-speaker_02",
+      "display_name": null,
+      "aliases": [
+        "SPEAKER_02"
+      ],
+      "speaker_labels": {
+        "ES2002c": "SPEAKER_02"
+      },
+      "method": "unresolved",
+      "confidence": 0.0
+    },
+    {
+      "person_id": "unresolved-es2002d-speaker_01",
+      "display_name": null,
+      "aliases": [
+        "SPEAKER_01"
+      ],
+      "speaker_labels": {
+        "ES2002d": "SPEAKER_01"
+      },
+      "method": "unresolved",
+      "confidence": 0.0
+    },
+    {
+      "person_id": "unresolved-es2002d-speaker_00",
+      "display_name": null,
+      "aliases": [
+        "SPEAKER_00"
+      ],
+      "speaker_labels": {
+        "ES2002d": "SPEAKER_00"
+      },
+      "method": "unresolved",
+      "confidence": 0.0
+    },
+    {
+      "person_id": "unresolved-es2002d-speaker_03",
+      "display_name": null,
+      "aliases": [
+        "SPEAKER_03"
+      ],
+      "speaker_labels": {
+        "ES2002d": "SPEAKER_03"
+      },
+      "method": "unresolved",
+      "confidence": 0.0
+    },
+    {
+      "person_id": "unresolved-es2002d-speaker_02",
+      "display_name": null,
+      "aliases": [
+        "SPEAKER_02"
+      ],
+      "speaker_labels": {
+        "ES2002d": "SPEAKER_02"
+      },
+      "method": "unresolved",
+      "confidence": 0.0
+    }
+  ],
+  "commitments": [
+    {
+      "commitment_id": "ES2002a-a0",
+      "series_id": "ES2002",
+      "description": "Working on the actual working design of the remote control as the industrial designer",
+      "owner_id": "david",
+      "owner_name": "David",
+      "origin_meeting_id": "ES2002a",
+      "created_at": "2005-01-03T10:00:00Z",
+      "due_date": null,
+      "state": "COMMITTED",
+      "mentions": [
+        {
+          "meeting_id": "ES2002a",
+          "item_id": "a0",
+          "occurred_at": "2005-01-03T10:00:00Z",
+          "description": "Working on the actual working design of the remote control as the industrial designer",
+          "owner": "David",
+          "due_date": null,
+          "due_raw": "in thirty minutes",
+          "evidence": [
+            {
+              "utt_id": 389,
+              "start_sec": 977.17,
+              "end_sec": 994.14,
+              "speaker_label": "SPEAKER_01",
+              "quote": "as the industrial designer, you're gonna be working on you know the actual working",
+              "meeting_id": "ES2002a"
+            },
+            {
+              "utt_id": 390,
+              "start_sec": 993.88,
+              "end_sec": 994.02,
+              "speaker_label": "SPEAKER_00",
+              "quote": "Yep.",
+              "meeting_id": "ES2002a"
+            }
+          ],
+          "similarity": 1.0
+        }
+      ],
+      "transitions": [
+        {
+          "commitment_id": "ES2002a-a0",
+          "from_state": null,
+          "to_state": "COMMITTED",
+          "meeting_id": "ES2002a",
+          "occurred_at": "2005-01-03T10:00:00Z",
+          "reason": "Committed with an owner",
+          "evidence": [
+            {
+              "utt_id": 389,
+              "start_sec": 977.17,
+              "end_sec": 994.14,
+              "speaker_label": "SPEAKER_01",
+              "quote": "as the industrial designer, you're gonna be working on you know the actual working",
+              "meeting_id": "ES2002a"
+            },
+            {
+              "utt_id": 390,
+              "start_sec": 993.88,
+              "end_sec": 994.02,
+              "speaker_label": "SPEAKER_00",
+              "quote": "Yep.",
+              "meeting_id": "ES2002a"
+            }
+          ]
+        }
+      ],
+      "timeline": {
+        "ES2002a": "COMMITTED",
+        "ES2002b": "COMMITTED",
+        "ES2002c": "COMMITTED",
+        "ES2002d": "COMMITTED"
+      }
+    },
+    {
+      "commitment_id": "ES2002a-a1",
+      "series_id": "ES2002",
+      "description": "Working on user interface and technical functions",
+      "owner_id": null,
+      "owner_name": null,
+      "origin_meeting_id": "ES2002a",
+      "created_at": "2005-01-03T10:00:00Z",
+      "due_date": null,
+      "state": "PROPOSED",
+      "mentions": [
+        {
+          "meeting_id": "ES2002a",
+          "item_id": "a1",
+          "occurred_at": "2005-01-03T10:00:00Z",
+          "description": "Working on user interface and technical functions",
+          "owner": null,
+          "due_date": null,
+          "due_raw": "in thirty minutes",
+          "evidence": [
+            {
+              "utt_id": 389,
+              "start_sec": 977.17,
+              "end_sec": 994.14,
+              "speaker_label": "SPEAKER_01",
+              "quote": "the next meeting's gonna be in thirty minutes.",
+              "meeting_id": "ES2002a"
+            },
+            {
+              "utt_id": 391,
+              "start_sec": 994.14,
+              "end_sec": 1019.31,
+              "speaker_label": "SPEAKER_01",
+              "quote": "for user interface, technical functions, I guess that's you know like what we've been talking about, what it'll actually do.",
+              "meeting_id": "ES2002a"
+            }
+          ],
+          "similarity": 1.0
+        }
+      ],
+      "transitions": [
+        {
+          "commitment_id": "ES2002a-a1",
+          "from_state": null,
+          "to_state": "PROPOSED",
+          "meeting_id": "ES2002a",
+          "occurred_at": "2005-01-03T10:00:00Z",
+          "reason": "Raised without a clear owner",
+          "evidence": [
+            {
+              "utt_id": 389,
+              "start_sec": 977.17,
+              "end_sec": 994.14,
+              "speaker_label": "SPEAKER_01",
+              "quote": "the next meeting's gonna be in thirty minutes.",
+              "meeting_id": "ES2002a"
+            },
+            {
+              "utt_id": 391,
+              "start_sec": 994.14,
+              "end_sec": 1019.31,
+              "speaker_label": "SPEAKER_01",
+              "quote": "for user interface, technical functions, I guess that's you know like what we've been talking about, what it'll actually do.",
+              "meeting_id": "ES2002a"
+            }
+          ]
+        }
+      ],
+      "timeline": {
+        "ES2002a": "PROPOSED",
+        "ES2002b": "PROPOSED",
+        "ES2002c": "PROPOSED",
+        "ES2002d": "PROPOSED"
+      }
+    },
+    {
+      "commitment_id": "ES2002a-a2",
+      "series_id": "ES2002",
+      "description": "Thinking about what requirements the product has to fulfil as the marketing executive",
+      "owner_id": "andrew",
+      "owner_name": "Andrew",
+      "origin_meeting_id": "ES2002a",
+      "created_at": "2005-01-03T10:00:00Z",
+      "due_date": null,
+      "state": "COMMITTED",
+      "mentions": [
+        {
+          "meeting_id": "ES2002a",
+          "item_id": "a2",
+          "occurred_at": "2005-01-03T10:00:00Z",
+          "description": "Thinking about what requirements the product has to fulfil as the marketing executive",
+          "owner": "Andrew",
+          "due_date": null,
+          "due_raw": "in thirty minutes",
+          "evidence": [
+            {
+              "utt_id": 389,
+              "start_sec": 977.17,
+              "end_sec": 994.14,
+              "speaker_label": "SPEAKER_01",
+              "quote": "the next meeting's gonna be in thirty minutes.",
+              "meeting_id": "ES2002a"
+            },
+            {
+              "utt_id": 391,
+              "start_sec": 994.14,
+              "end_sec": 1019.31,
+              "speaker_label": "SPEAKER_01",
+              "quote": "and uh marketing executive, you'll be just thinking about what it actually what, you know, what requirements it has to has to fulfil",
+              "meeting_id": "ES2002a"
+            }
+          ],
+          "similarity": 1.0
+        }
+      ],
+      "transitions": [
+        {
+          "commitment_id": "ES2002a-a2",
+          "from_state": null,
+          "to_state": "COMMITTED",
+          "meeting_id": "ES2002a",
+          "occurred_at": "2005-01-03T10:00:00Z",
+          "reason": "Committed with an owner",
+          "evidence": [
+            {
+              "utt_id": 389,
+              "start_sec": 977.17,
+              "end_sec": 994.14,
+              "speaker_label": "SPEAKER_01",
+              "quote": "the next meeting's gonna be in thirty minutes.",
+              "meeting_id": "ES2002a"
+            },
+            {
+              "utt_id": 391,
+              "start_sec": 994.14,
+              "end_sec": 1019.31,
+              "speaker_label": "SPEAKER_01",
+              "quote": "and uh marketing executive, you'll be just thinking about what it actually what, you know, what requirements it has to has to fulfil",
+              "meeting_id": "ES2002a"
+            }
+          ]
+        }
+      ],
+      "timeline": {
+        "ES2002a": "COMMITTED",
+        "ES2002b": "COMMITTED",
+        "ES2002c": "COMMITTED",
+        "ES2002d": "COMMITTED"
+      }
+    },
+    {
+      "commitment_id": "ES2002a-a3",
+      "series_id": "ES2002",
+      "description": "Getting instructions emailed",
+      "owner_id": null,
+      "owner_name": null,
+      "origin_meeting_id": "ES2002a",
+      "created_at": "2005-01-03T10:00:00Z",
+      "due_date": null,
+      "state": "PROPOSED",
+      "mentions": [
+        {
+          "meeting_id": "ES2002a",
+          "item_id": "a3",
+          "occurred_at": "2005-01-03T10:00:00Z",
+          "description": "Getting instructions emailed",
+          "owner": null,
+          "due_date": null,
+          "due_raw": null,
+          "evidence": [
+            {
+              "utt_id": 391,
+              "start_sec": 994.14,
+              "end_sec": 1019.31,
+              "speaker_label": "SPEAKER_01",
+              "quote": "you'll all get instructions emailed to you, I guess.",
+              "meeting_id": "ES2002a"
+            }
+          ],
+          "similarity": 1.0
+        }
+      ],
+      "transitions": [
+        {
+          "commitment_id": "ES2002a-a3",
+          "from_state": null,
+          "to_state": "PROPOSED",
+          "meeting_id": "ES2002a",
+          "occurred_at": "2005-01-03T10:00:00Z",
+          "reason": "Raised without a clear owner",
+          "evidence": [
+            {
+              "utt_id": 391,
+              "start_sec": 994.14,
+              "end_sec": 1019.31,
+              "speaker_label": "SPEAKER_01",
+              "quote": "you'll all get instructions emailed to you, I guess.",
+              "meeting_id": "ES2002a"
+            }
+          ]
+        }
+      ],
+      "timeline": {
+        "ES2002a": "PROPOSED",
+        "ES2002b": "PROPOSED",
+        "ES2002c": "PROPOSED",
+        "ES2002d": "PROPOSED"
+      }
+    }
+  ],
+  "reversals": [],
+  "state_counts": {
+    "COMMITTED": 2,
+    "PROPOSED": 2
+  },
+  "linked_across_meetings": 0
+}

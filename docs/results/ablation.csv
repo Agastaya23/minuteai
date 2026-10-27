@@ -1,0 +1,6 @@
+config,meetings,artifacts,retention,validator_pass_rate,validator_mean_confidence,unsupported_entity_rate,hallucination_rate,labelled_n,rouge1,rouge2,rougeL,action_precision,action_recall,action_f1,llm_calls,tokens,cost_usd
+A,5,35,1.000,0.000,0.000,0.180,—,0,0.264,0.039,0.230,0.333,0.333,0.333,5,111318,0.000
+B,5,28,1.000,0.452,0.921,0.153,—,0,0.244,0.058,0.220,0.150,0.200,0.171,20,379136,0.000
+C-STRICT,5,14,0.452,1.000,1.000,0.000,—,0,0.110,0.029,0.092,0.133,0.133,0.133,20,379136,0.000
+C-BALANCED,5,24,0.840,0.558,0.951,0.100,—,0,0.181,0.041,0.161,0.150,0.200,0.171,20,379136,0.000
+C-PERMISSIVE,5,28,1.000,0.452,0.921,0.153,—,0,0.244,0.058,0.220,0.150,0.200,0.171,20,379136,0.000
