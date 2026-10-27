@@ -35,6 +35,9 @@ class Transcript(BaseModel):
     duration_sec: float = 0.0
     backend: Literal["whisper", "aws_transcribe", "synthetic"] = "whisper"
     model_version: str = ""
+    # Optional per-speaker voice embeddings (diarization backend), used by
+    # cross-meeting entity resolution as a last-resort identity signal.
+    speaker_embeddings: dict[str, list[float]] = Field(default_factory=dict)
 
     def get(self, utt_id: int) -> Utterance | None:
         # utt_ids are sequential from 0, so index lookup is the fast path.
