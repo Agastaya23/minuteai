@@ -74,7 +74,9 @@ class SentenceTransformerEmbedder:
 
         self.model = SentenceTransformer(model_name)
         self.name = model_name.split("/")[-1]
-        self.dim = int(self.model.get_sentence_embedding_dimension())
+        dim_fn = getattr(self.model, "get_embedding_dimension", None) or \
+            self.model.get_sentence_embedding_dimension
+        self.dim = int(dim_fn())
 
     def embed(self, texts: list[str]) -> np.ndarray:
         if not texts:

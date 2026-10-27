@@ -210,3 +210,25 @@ def test_graph_api(series_graph):
     assert client.get("/series/nope/commitments").status_code == 404
     assert client.get("/people/nobody/ledger").status_code == 404
     assert client.post("/series/payments/rebuild").status_code == 200
+
+
+class _AllSimilar:
+    """Embedder that rates every pair as identical (worst case for false matches)."""
+
+    name, dim = "const", 4
+
+    def embed(self, texts):
+        import numpy as np
+
+        return np.tile(np.array([[0.5, 0.5, 0.5, 0.5]], dtype=np.float32), (len(texts), 1))
+
+
+def test_completion_needs_lexical_anchor():
+    sim = Similarity(_AllSimilar())
+    item = ActionItem(item_id="a0", description="Benchmark the asynchronous fraud check",
+                      owner="Rahul", owner_resolution_method="self_commitment")
+    b1 = _bundle("m1", [("SPEAKER_00", "I'm Rahul. I'll benchmark the fraud check.")], 1,
+                 summary=MeetingSummary(meeting_id="m1", action_items=[item]))
+    b2 = _bundle("m2", [("SPEAKER_00", "I'm Rahul. I talked to the fraud team.")], 8)
+    [c] = link_commitments("s", [b1, b2], PeopleIndex(resolve_people([b1, b2])), sim)
+    assert c.state == "COMMITTED"

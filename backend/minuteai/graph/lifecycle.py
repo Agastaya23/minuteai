@@ -25,7 +25,13 @@ from minuteai.extract.chunker import render_utterances
 from minuteai.extract.llm_client import LLMClient, LLMError
 from minuteai.extract.schemas import LLMCommitmentStatus
 from minuteai.graph.entity_resolution import MeetingBundle
-from minuteai.graph.similarity import Similarity, is_completion, is_delay, is_reversal
+from minuteai.graph.similarity import (
+    Similarity,
+    is_completion,
+    is_delay,
+    is_reversal,
+    keyword_overlap,
+)
 from minuteai.models.evidence import EvidenceSpan
 from minuteai.models.graph import TERMINAL_STATES, Commitment, CommitmentState, Transition
 from minuteai.models.transcript import Utterance
@@ -33,6 +39,7 @@ from minuteai.models.transcript import Utterance
 MENTION_THRESHOLD = 0.5
 REVERSAL_THRESHOLD = 0.55
 JUDGE_THRESHOLD = 0.35
+KEYWORD_ANCHOR = 0.5
 DEFAULT_SILENCE_MEETINGS = 2
 
 
@@ -103,6 +110,11 @@ class LifecycleTracker:
             if score < MENTION_THRESHOLD:
                 continue
             best.mentioned = True
+            # A state change needs lexical anchoring too: embeddings rate loosely related
+            # sentences as similar ("benchmark the fraud check" vs "I talked to the fraud
+            # team"), and a stray completion cue must not close the wrong commitment.
+            if max(keyword_overlap(t, u.text) for t in texts) < KEYWORD_ANCHOR:
+                continue
             if is_completion(u.text):
                 obs = Observation("FULFILLED", f"Completion stated by {u.speaker}: “{u.text}”",
                                   [span_of(u, bundle.meeting_id)], True)
