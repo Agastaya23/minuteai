@@ -23,7 +23,8 @@ audio ─▶ S3 ─▶ transcribe (faster-whisper + pyannote │ AWS Transcribe)
   chunking, merging, dedup) comes from deterministic Python.
 - All LLM calls go through `minuteai/extract/llm_client.py`. No direct SDK calls anywhere else.
 - All LLM responses are parsed into pydantic models. Never consume raw text.
-- All storage access goes through `minuteai/storage/`. No boto3 calls elsewhere.
+- All storage access goes through `minuteai/storage/`. No boto3 calls elsewhere (the AWS
+  Transcribe client also comes from `storage/aws_clients.py`).
 - Transcription backends are adapters behind `TranscriptionBackend`. No backend-specific types
   leak out.
 - Action-item owners are nullable: `owner=None` + `owner_resolution_method="unresolved"` beats
@@ -33,18 +34,20 @@ audio ─▶ S3 ─▶ transcribe (faster-whisper + pyannote │ AWS Transcribe)
 
 | Task | Command |
 |---|---|
-| Install | `make install` (backend via uv, frontend via npm); `make install-ml` for whisper/pyannote/faiss |
+| Install | `make install` (uv + npm); `make install-ml` for whisper/pyannote/faiss/spacy (`--extra asr` = Whisper only) |
 | Backend dev server (:8080) | `make dev-backend` |
 | Frontend dev server (:3000) | `make dev-frontend` |
 | Tests | `make test` (or `cd backend && uv run pytest tests/test_x.py -k name`) |
 | Lint | `make lint` |
+| Local AWS without Docker | `make aws-mock` (moto on :5001; set `DDB_ENDPOINT_URL`/`S3_ENDPOINT_URL`) |
 | DynamoDB Local (:8000) | `make ddb-up` / `make ddb-down`, then `make create-table` |
-| Seed 3 demo meetings | `make seed` |
+| Demo data | `make sample-audio` (macOS `say`), then `make seed` (replayed LLM responses) |
 | Transcribe a file | `cd backend && uv run python ../scripts/transcribe_local.py path.wav` |
-| Extract from cached transcript | `cd backend && uv run python ../scripts/extract_local.py <meeting_id>` |
+| Extract | `cd backend && uv run python ../scripts/extract_local.py <meeting_id> [--filter]` |
 | Evaluation | `make eval`; ablation: `uv run python ../eval/runners/run_ablation.py --meetings 5` |
+| Provision AWS | `cd backend && uv run python ../scripts/setup_aws.py --bucket … --origin …` |
 
-Python 3.12 (managed by uv; avoid 3.13+ for pyannote). Node 20+.
+Python 3.12 (managed by uv; avoid 3.13+ for pyannote). Node 20+. ffmpeg on PATH.
 
 ## Conventions
 
@@ -57,6 +60,13 @@ Python 3.12 (managed by uv; avoid 3.13+ for pyannote). Node 20+.
 - Settings come from `minuteai.config.get_settings()` (env / `.env`), never `os.environ` directly.
 - Research logs: `data/llm_calls.jsonl` (every LLM call) and `data/dropped_artifacts.jsonl`
   (every grounding reject). Don't remove fields from them — the eval harness reads them.
+- `minuteai/samples.py` holds the 3-meeting demo series *and* recorded LLM responses
+  (`ReplayProvider`) incl. deliberate hallucinations; tests and the eval smoke run depend on
+  their exact content — update test expectations if you change them.
+- Speaker naming (`extract/speakers.py`) is tuned on real AMI data: weak signals need
+  corroboration. Re-check names on AMI (`eval/datasets/ami.py`) after changing it.
+- Frontend uses shadcn "base-nova" (Base UI, not Radix): triggers take `render={<Button/>}`,
+  not `asChild`.
 
 ## Where things live
 
@@ -69,7 +79,7 @@ Python 3.12 (managed by uv; avoid 3.13+ for pyannote). Node 20+.
 | `backend/minuteai/ground/` | `validator.py` (6 checks), `filter.py` (STRICT/BALANCED/PERMISSIVE) |
 | `backend/minuteai/search/` | `embedder.py`, `index.py` (FAISS→S3), `hybrid.py` (BM25+dense RRF), `answerer.py` |
 | `backend/minuteai/graph/` | `entity_resolution.py`, `linker.py`, `lifecycle.py`, `decisions.py`, `service.py` |
-| `backend/minuteai/api/` | FastAPI app, routes, background processing |
+| `backend/minuteai/api/` | FastAPI app, routes (`routes_meetings/search/graph`), `processing.py` |
 | `backend/minuteai/samples.py` | Synthetic 3-meeting series used by tests, seed, offline eval |
 | `frontend/` | Next.js 15 App Router UI (`/`, `/meetings/[id]`, `/meetings/[id]/dropped`, `/search`, `/series/[id]`) |
 | `eval/` | Datasets (AMI, QMSum), metrics, runners (`run_ablation.py`, `run_all.py`) |

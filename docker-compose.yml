@@ -1,3 +1,6 @@
+# Local stack. `docker compose up -d dynamodb` for DynamoDB Local only (make ddb-up),
+# or `docker compose --profile app up --build` for DynamoDB Local + API + UI.
+# S3 is real AWS (set S3_BUCKET + credentials in .env), as in the build guide.
 services:
   dynamodb:
     image: amazon/dynamodb-local:latest
@@ -8,5 +11,33 @@ services:
       - ddb-data:/home/dynamodblocal/data
     user: root
 
+  backend:
+    profiles: ["app"]
+    build: ./backend
+    env_file: .env
+    environment:
+      DDB_ENDPOINT_URL: http://dynamodb:8000
+      CORS_ORIGINS: '["http://localhost:3000"]'
+    ports:
+      - "8080:8080"
+    volumes:
+      - models:/models
+      - app-data:/data
+    depends_on:
+      - dynamodb
+
+  frontend:
+    profiles: ["app"]
+    build:
+      context: ./frontend
+      args:
+        NEXT_PUBLIC_API_URL: http://localhost:8080
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+
 volumes:
   ddb-data:
+  models:
+  app-data:

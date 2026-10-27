@@ -105,3 +105,15 @@ def test_provider_selection(monkeypatch):
     assert make_provider("gemini-2.0-flash", "k").name == "gemini"
     with pytest.raises(ValueError):
         make_provider("gpt-4", "k")
+
+
+def test_missing_anthropic_credentials_message(monkeypatch, tmp_path):
+    for var in ("ANTHROPIC_API_KEY", "ANTHROPIC_AUTH_TOKEN", "ANTHROPIC_PROFILE"):
+        monkeypatch.delenv(var, raising=False)
+    monkeypatch.setenv("ANTHROPIC_CONFIG_DIR", str(tmp_path))  # no `ant` profile either
+    from minuteai.extract.llm_client import AnthropicProvider
+
+    with pytest.raises(LLMError, match="LLM_API_KEY"):
+        # depending on SDK resolution, construction or the first call fails
+        provider = AnthropicProvider("claude-haiku-5-5")
+        LLMClient(provider, log_path=tmp_path / "c.jsonl").complete_structured("x", Pet)

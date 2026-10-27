@@ -38,6 +38,12 @@ SYSTEM_PROMPT = (
 )
 
 
+MISSING_CREDENTIALS = (
+    "No {provider} credentials: set LLM_API_KEY in .env (or ANTHROPIC_API_KEY / GEMINI_API_KEY) "
+    "and retry. The transcript is cached, so retrying won't re-transcribe."
+)
+
+
 class LLMError(RuntimeError):
     pass
 
@@ -77,8 +83,11 @@ class AnthropicProvider:
 
         self._anthropic = anthropic
         # SDK retries disabled: backoff is owned (and logged) by LLMClient.
-        self.client = anthropic.Anthropic(api_key=api_key, max_retries=0) if api_key else \
-            anthropic.Anthropic(max_retries=0)
+        try:
+            self.client = anthropic.Anthropic(api_key=api_key, max_retries=0) if api_key else \
+                anthropic.Anthropic(max_retries=0)
+        except anthropic.CredentialsError as e:
+            raise LLMError(MISSING_CREDENTIALS.format(provider="Anthropic")) from e
         self.model = model
         self.max_tokens = max_tokens
 
@@ -100,6 +109,13 @@ class AnthropicProvider:
             if e.status_code in (408, 409, 429, 529) or e.status_code >= 500:
                 raise LLMRateLimitError(str(e)) from e
             raise LLMError(f"Anthropic API error {e.status_code}: {e.message}") from e
+        except a.CredentialsError as e:
+            raise LLMError(MISSING_CREDENTIALS.format(provider="Anthropic")) from e
+        except TypeError as e:
+            # Older resolution path: TypeError when no credential source resolves.
+            if "authentication" in str(e).lower():
+                raise LLMError(MISSING_CREDENTIALS.format(provider="Anthropic")) from e
+            raise
         if resp.stop_reason == "refusal":
             raise LLMRefusalError(str(getattr(resp, "stop_details", "") or "refused"))
         text = "".join(b.text for b in resp.content if b.type == "text")
@@ -117,7 +133,10 @@ class GeminiProvider:
     def __init__(self, model: str, api_key: str | None = None) -> None:
         from google import genai
 
-        self.client = genai.Client(api_key=api_key)
+        try:
+            self.client = genai.Client(api_key=api_key)
+        except ValueError as e:  # raised when no API key is found
+            raise LLMError(MISSING_CREDENTIALS.format(provider="Gemini")) from e
         self.model = model
 
     def generate(self, prompt: str, response_model: type[BaseModel]) -> ProviderResponse:

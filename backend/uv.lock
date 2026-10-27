@@ -1694,8 +1694,14 @@ dependencies = [
 ]
 
 [package.optional-dependencies]
+asr = [
+    { name = "faster-whisper" },
+]
 bertscore = [
     { name = "bert-score" },
+]
+diarization = [
+    { name = "pyannote-audio" },
 ]
 eval = [
     { name = "matplotlib" },
@@ -1707,6 +1713,13 @@ ml = [
     { name = "pyannote-audio" },
     { name = "sentence-transformers" },
     { name = "spacy" },
+]
+nlp = [
+    { name = "spacy" },
+]
+retrieval = [
+    { name = "faiss-cpu" },
+    { name = "sentence-transformers" },
 ]
 
 [package.dev-dependencies]
@@ -1723,13 +1736,14 @@ requires-dist = [
     { name = "anthropic", specifier = ">=0.70" },
     { name = "bert-score", marker = "extra == 'bertscore'", specifier = ">=0.3.13" },
     { name = "boto3", specifier = ">=1.34" },
-    { name = "faiss-cpu", marker = "extra == 'ml'", specifier = ">=1.8" },
+    { name = "faiss-cpu", marker = "extra == 'retrieval'", specifier = ">=1.8" },
     { name = "fastapi", specifier = ">=0.115" },
-    { name = "faster-whisper", marker = "extra == 'ml'", specifier = ">=1.0" },
+    { name = "faster-whisper", marker = "extra == 'asr'", specifier = ">=1.0" },
     { name = "google-genai", specifier = ">=1.0" },
     { name = "matplotlib", marker = "extra == 'eval'", specifier = ">=3.8" },
+    { name = "minuteai", extras = ["asr", "diarization", "retrieval", "nlp"], marker = "extra == 'ml'" },
     { name = "numpy", specifier = ">=1.26" },
-    { name = "pyannote-audio", marker = "extra == 'ml'", specifier = ">=3.1,<4" },
+    { name = "pyannote-audio", marker = "extra == 'diarization'", specifier = ">=3.1,<4" },
     { name = "pydantic", specifier = ">=2.7" },
     { name = "pydantic-settings", specifier = ">=2.3" },
     { name = "python-dateutil", specifier = ">=2.9" },
@@ -1738,11 +1752,11 @@ requires-dist = [
     { name = "rank-bm25", specifier = ">=0.2.2" },
     { name = "rapidfuzz", specifier = ">=3.9" },
     { name = "rouge-score", marker = "extra == 'eval'", specifier = ">=0.1.2" },
-    { name = "sentence-transformers", marker = "extra == 'ml'", specifier = ">=3.0" },
-    { name = "spacy", marker = "extra == 'ml'", specifier = ">=3.7" },
+    { name = "sentence-transformers", marker = "extra == 'retrieval'", specifier = ">=3.0" },
+    { name = "spacy", marker = "extra == 'nlp'", specifier = ">=3.7" },
     { name = "uvicorn", extras = ["standard"], specifier = ">=0.30" },
 ]
-provides-extras = ["ml", "eval", "bertscore"]
+provides-extras = ["asr", "diarization", "retrieval", "nlp", "ml", "eval", "bertscore"]
 
 [package.metadata.requires-dev]
 dev = [

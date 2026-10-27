@@ -13,6 +13,7 @@ from dataclasses import dataclass, field
 from typing import TYPE_CHECKING
 
 from minuteai.extract.extractor import Extractor
+from minuteai.extract.llm_client import LLMError
 from minuteai.extract.speakers import name_speakers
 from minuteai.ground.filter import GroundingFilter
 from minuteai.models.artifacts import MeetingSummary
@@ -98,7 +99,9 @@ def process_meeting(
         repo.update_status(meeting_id, "ready", participants=participants)
     except Exception as e:  # noqa: BLE001 — any failure must be persisted for the UI
         log.exception("processing %s failed", meeting_id)
-        repo.update_status(meeting_id, "failed", error=f"{type(e).__name__}: {e}"[:1000])
+        message = str(e) if isinstance(e, LLMError | ProcessingError) else \
+            f"{type(e).__name__}: {e}"
+        repo.update_status(meeting_id, "failed", error=message[:1000])
         return None
 
     for hook in services.on_ready:

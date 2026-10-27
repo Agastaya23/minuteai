@@ -3,7 +3,7 @@
 UV ?= uv
 
 install:
-	cd backend && $(UV) sync
+	cd backend && $(UV) sync --extra eval
 	cd frontend && npm install
 
 install-ml:

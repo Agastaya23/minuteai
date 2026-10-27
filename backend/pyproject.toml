@@ -20,15 +20,13 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-# Heavy ML stack. The code imports these lazily and degrades gracefully
-# (hash embeddings, numpy search, regex-only NER) when they are absent.
-ml = [
-    "faster-whisper>=1.0",
-    "pyannote.audio>=3.1,<4",
-    "sentence-transformers>=3.0",
-    "faiss-cpu>=1.8",
-    "spacy>=3.7",
-]
+# Heavy ML stack, split so deployments can pick. The code imports these lazily and
+# degrades gracefully (hash embeddings, numpy search, regex-only NER) without them.
+asr = ["faster-whisper>=1.0"]
+diarization = ["pyannote.audio>=3.1,<4"]
+retrieval = ["sentence-transformers>=3.0", "faiss-cpu>=1.8"]
+nlp = ["spacy>=3.7"]
+ml = ["minuteai[asr,diarization,retrieval,nlp]"]
 
 # Evaluation harness (eval/). BERTScore is optional and pulls in torch.
 eval = [
