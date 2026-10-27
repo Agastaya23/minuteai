@@ -32,7 +32,8 @@ def _seed(repo: MeetingRepository, tmp_path) -> None:
         repo.put_meeting(meeting)
         repo.put_transcript(t)
         llm = LLMClient(ReplayProvider(mid), log_path=tmp_path / "c.jsonl")
-        summary = Extractor(llm=llm, embedder=EMB).extract_meeting(t)
+        summary = Extractor(llm=llm, embedder=EMB).extract_meeting(
+            t, occurred_at=meeting.occurred_at)
         kept, _ = GroundingFilter(t, log_path=tmp_path / "d.jsonl").apply(summary)
         repo.put_summary(kept)
 

@@ -19,10 +19,11 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name
 
 def default_services() -> Services:
     from minuteai.api.hooks import default_hooks
+    from minuteai.graph.service import GraphService
     from minuteai.search.service import SearchService
 
     repo = MeetingRepository()
-    services = Services(repo=repo, search=SearchService(repo))
+    services = Services(repo=repo, search=SearchService(repo), graph=GraphService(repo))
 
     services.on_ready.extend(default_hooks(services))
     return services

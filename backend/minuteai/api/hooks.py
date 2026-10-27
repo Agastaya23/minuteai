@@ -11,4 +11,6 @@ def default_hooks(services: Services) -> list[Callable[[str], None]]:
     hooks: list[Callable[[str], None]] = []
     if services.search is not None:
         hooks.append(services.search.index_meeting)
+    if services.graph is not None:
+        hooks.append(services.graph.rebuild_for_meeting)
     return hooks

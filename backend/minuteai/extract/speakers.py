@@ -19,7 +19,7 @@ from minuteai.models.transcript import Transcript
 
 _NAME = r"([A-Z][a-z]{1,20})"
 SELF_INTRO = [
-    re.compile(rf"\b(?:I'm|I am|my name is|this is|it's)\s+{_NAME}\b"),
+    re.compile(rf"\b(?i:I'm|I am|my name is|this is|it's)\s+{_NAME}\b"),
     re.compile(rf"(?:^|[.,!?]\s*){_NAME}\s+here\b"),
 ]
 ADDRESS_PREV = re.compile(

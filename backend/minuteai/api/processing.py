@@ -21,6 +21,7 @@ from minuteai.transcribe.base import TranscriptionBackend, get_backend
 from minuteai.transcribe.pipeline import transcribe_meeting
 
 if TYPE_CHECKING:
+    from minuteai.graph.service import GraphService
     from minuteai.search.service import SearchService
 
 log = logging.getLogger(__name__)
@@ -35,6 +36,7 @@ class Services:
     backend: Callable[[str | None], TranscriptionBackend] = get_backend
     on_ready: list[Callable[[str], None]] = field(default_factory=list)
     search: SearchService | None = None
+    graph: GraphService | None = None
 
 
 class ProcessingError(RuntimeError):
