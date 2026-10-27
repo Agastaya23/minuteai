@@ -23,6 +23,9 @@ class Settings(BaseSettings):
 
     llm_api_key: str | None = None
     llm_model: str = "claude-haiku-5-5"
+    # Reasoning depth for providers that think by default (Gemini 3.x).
+    # Extraction is mostly copying with structure; "low" is ~10x faster than the default.
+    llm_thinking: str = "low"
 
     hf_token: str | None = None
     whisper_model: str = "small"

@@ -117,3 +117,13 @@ def test_missing_anthropic_credentials_message(monkeypatch, tmp_path):
         # depending on SDK resolution, construction or the first call fails
         provider = AnthropicProvider("claude-haiku-5-5")
         LLMClient(provider, log_path=tmp_path / "c.jsonl").complete_structured("x", Pet)
+
+
+def test_gemini_thinking_config():
+    from minuteai.extract.llm_client import GeminiProvider
+
+    g3 = GeminiProvider("gemini-3.5-flash", "k", thinking="low")
+    assert g3._thinking_config() == {"thinking_config": {"thinking_level": "LOW"}}
+    g25 = GeminiProvider("gemini-2.5-flash", "k", thinking="minimal")
+    assert g25._thinking_config() == {"thinking_config": {"thinking_budget": 0}}
+    assert GeminiProvider("gemini-3.5-flash", "k", thinking="default")._thinking_config() == {}

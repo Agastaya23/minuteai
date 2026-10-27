@@ -130,8 +130,10 @@ class AnthropicProvider:
 class GeminiProvider:
     name = "gemini"
 
-    def __init__(self, model: str, api_key: str | None = None) -> None:
+    def __init__(self, model: str, api_key: str | None = None, thinking: str = "low") -> None:
         from google import genai
+
+        self.thinking = thinking
 
         try:
             self.client = genai.Client(api_key=api_key)
@@ -150,6 +152,7 @@ class GeminiProvider:
                     "system_instruction": SYSTEM_PROMPT,
                     "response_mime_type": "application/json",
                     "response_json_schema": response_model.model_json_schema(),
+                    **self._thinking_config(),
                 },
             )
         except errors.APIError as e:
@@ -157,12 +160,23 @@ class GeminiProvider:
                 raise LLMRateLimitError(str(e)) from e
             raise LLMError(f"Gemini API error {e.code}: {e}") from e
         usage = resp.usage_metadata
+        thoughts = getattr(usage, "thoughts_token_count", 0) or 0
         return ProviderResponse(
             text=resp.text or "",
             input_tokens=getattr(usage, "prompt_token_count", 0) or 0,
-            output_tokens=getattr(usage, "candidates_token_count", 0) or 0,
+            # thinking tokens are billed as output
+            output_tokens=(getattr(usage, "candidates_token_count", 0) or 0) + thoughts,
             stop_reason=str(resp.candidates[0].finish_reason) if resp.candidates else None,
         )
+
+
+    def _thinking_config(self) -> dict:
+        if not self.thinking or self.thinking == "default":
+            return {}
+        if self.model.startswith("gemini-2"):
+            budget = {"minimal": 0, "low": 512, "medium": 2048, "high": 8192}
+            return {"thinking_config": {"thinking_budget": budget.get(self.thinking, 512)}}
+        return {"thinking_config": {"thinking_level": self.thinking.upper()}}
 
 
 def _strict_schema(model: type[BaseModel]) -> dict:
@@ -191,7 +205,7 @@ def make_provider(model: str | None = None, api_key: str | None = None) -> Provi
     model = model or s.llm_model
     api_key = api_key or s.llm_api_key or None
     if model.startswith("gemini"):
-        return GeminiProvider(model, api_key)
+        return GeminiProvider(model, api_key, s.llm_thinking)
     if model.startswith("claude"):
         return AnthropicProvider(model, api_key)
     raise ValueError(f"LLM_MODEL {model!r}: expected a claude-* or gemini-* model id")
