@@ -39,6 +39,8 @@ SYSTEM_PROMPT = (
 )
 
 
+REQUEST_TIMEOUT_S = 180
+
 MISSING_CREDENTIALS = (
     "No {provider} credentials: set LLM_API_KEY in .env (or ANTHROPIC_API_KEY / GEMINI_API_KEY) "
     "and retry. The transcript is cached, so retrying won't re-transcribe."
@@ -135,8 +137,9 @@ class AnthropicProvider:
         self._anthropic = anthropic
         # SDK retries disabled: backoff is owned (and logged) by LLMClient.
         try:
-            self.client = anthropic.Anthropic(api_key=api_key, max_retries=0) if api_key else \
-                anthropic.Anthropic(max_retries=0)
+            self.client = anthropic.Anthropic(
+                api_key=api_key, max_retries=0, timeout=REQUEST_TIMEOUT_S
+            ) if api_key else anthropic.Anthropic(max_retries=0, timeout=REQUEST_TIMEOUT_S)
         except anthropic.CredentialsError as e:
             raise LLMError(MISSING_CREDENTIALS.format(provider="Anthropic")) from e
         self.model = model
@@ -187,7 +190,9 @@ class GeminiProvider:
         self.thinking = thinking
 
         try:
-            self.client = genai.Client(api_key=api_key)
+            # Without a timeout a dropped connection hangs forever; timeouts are retried.
+            self.client = genai.Client(api_key=api_key,
+                                       http_options={"timeout": REQUEST_TIMEOUT_S * 1000})
         except ValueError as e:  # raised when no API key is found
             raise LLMError(MISSING_CREDENTIALS.format(provider="Gemini")) from e
         self.model = model

@@ -221,10 +221,10 @@ def run(args) -> dict:
         for config in ("A", "B"):  # C ⊆ B: C is scored on the labelled B items
             for s in summaries[config].values():
                 items += grounding_metrics.statements(config, s)
-        sample = grounding_metrics.stratified_sample(items, args.label_n)
-        out = sheet if not sheet.exists() else RESULTS_DIR / "labelling_sheet.new.csv"
-        grounding_metrics.write_labelling_sheet(sample, transcripts, out)
-        log.info("wrote %d items to label → %s", len(sample), out)
+        if not sheet.exists():  # never replace a sheet someone may be labelling
+            sample = grounding_metrics.stratified_sample(items, args.label_n)
+            grounding_metrics.write_labelling_sheet(sample, transcripts, sheet)
+            log.info("wrote %d items to label → %s", len(sample), sheet)
 
     reasons = {str(m): dict(grounding_metrics.drop_reasons(dropped_logs[m])) for m in MODES}
     write_outputs(table, reasons, args)
@@ -290,17 +290,36 @@ def plot(table: list[dict], reasons: dict) -> None:
     if any(r.get("hallucination_rate", float("nan")) == r.get("hallucination_rate")
            for r in table):
         bars("hallucination_rate", "Human-labelled hallucination rate", "hallucination_rate.png")
+    if any(r.get("llm_judge_hallucination_rate", float("nan"))
+           == r.get("llm_judge_hallucination_rate") for r in table):
+        bars("llm_judge_hallucination_rate", "Hallucination rate (LLM-judge proxy)",
+             "llm_judge_hallucination_rate.png")
 
-    # precision/recall-style trade-off across strictness modes
-    pts = [(r["retention"], r.get("validator_pass_rate", float("nan")), r["config"])
-           for r in table if r["config"] == "B" or r["config"].startswith("C-")]
-    fig, ax = plt.subplots(figsize=(5.2, 4))
-    ax.plot([p[0] for p in pts], [p[1] for p in pts], "o-", color="#2f6f4f")
-    for x, y, label in pts:
-        ax.annotate(label, (x, y), textcoords="offset points", xytext=(6, 4), fontsize=9)
-    ax.set_xlabel("retention (recall proxy)")
-    ax.set_ylabel("validator pass rate (precision proxy)")
-    ax.set_xlim(0, 1.05)
+    # precision/recall-style trade-off across strictness modes. Precision is 1 - the
+    # (human, else LLM-judge) hallucination rate when labels exist, else validator pass rate.
+    def precision(r: dict) -> tuple[float, str]:
+        for key, label in (("hallucination_rate", "1 − human hallucination rate"),
+                           ("llm_judge_hallucination_rate", "1 − LLM-judge hallucination rate")):
+            v = r.get(key, float("nan"))
+            if v == v:
+                return 1 - v, label
+        return r.get("validator_pass_rate", float("nan")), "validator pass rate"
+
+    curve = [r for r in table if r["config"] == "B" or r["config"].startswith("C-")]
+    ylabel = precision(curve[0])[1] if curve else ""
+    pts: dict[tuple[float, float], list[str]] = {}
+    for r in curve:
+        pts.setdefault((round(r["retention"], 4), round(precision(r)[0], 4)), []).append(
+            r["config"])
+    ordered = sorted(pts.items())
+    fig, ax = plt.subplots(figsize=(5.6, 4.2))
+    ax.plot([p[0] for p, _ in ordered], [p[1] for p, _ in ordered], "o-", color="#2f6f4f")
+    for i, ((x, y), names) in enumerate(ordered):  # alternate above/below to avoid overlap
+        ax.annotate(" = ".join(names), (x, y), textcoords="offset points",
+                    xytext=(0, 9 if i % 2 == 0 else -16), ha="center", fontsize=9)
+    ax.set_xlabel("retention: share of B's artifacts kept (recall proxy)")
+    ax.set_ylabel(f"precision: {ylabel}")
+    ax.set_xlim(0, 1.15)
     ax.set_ylim(0, 1.05)
     ax.spines[["top", "right"]].set_visible(False)
     fig.tight_layout()
