@@ -17,6 +17,10 @@ os.environ["TRANSCRIBE_BACKEND"] = "whisper"
 os.environ["S3_BUCKET"] = "minuteai-test"
 os.environ["DDB_TABLE"] = "minuteai-test"
 os.environ["LLM_API_KEY"] = "test-key"
+os.environ["LLM_MODEL"] = "claude-haiku-5-5"
+os.environ["LLM_RPM"] = "0"
+os.environ["LLM_THINKING"] = "low"
+os.environ["HF_TOKEN"] = ""
 
 from minuteai.config import get_settings  # noqa: E402
 from minuteai.models.evidence import EvidenceSpan  # noqa: E402

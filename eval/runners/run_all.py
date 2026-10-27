@@ -155,10 +155,13 @@ def write_report(sections: dict, args) -> Path:
               "A = single prompt, no evidence · B = chunked extraction with evidence, no filter · "
               "C = B + grounding filter in each strictness mode.", "",
               md_table(abl["table"], ["config", "artifacts", "retention", "validator_pass_rate",
-                                      "unsupported_entity_rate", "hallucination_rate",
-                                      "labelled_n", "rougeL", "action_f1"]), "",
+                                      "unsupported_entity_rate", "llm_judge_hallucination_rate",
+                                      "llm_judge_n", "hallucination_rate", "labelled_n",
+                                      "rougeL", "action_f1"]), "",
               "* **hallucination_rate** comes from human labels in `labelling_sheet.csv` "
               "(unsupported + contradicted) / labelled; blank until labels are filled in.",
+              "* **llm_judge_hallucination_rate** is the same measure labelled automatically by "
+              "an LLM judge (`run_autojudge.py`): a preliminary proxy, not ground truth.",
               "* **unsupported_entity_rate** is the automatic proxy: the share of artifacts with a "
               "name, number or date that appears nowhere in the transcript.", "",
               "![](figures/unsupported_entity_rate.png)", "",
@@ -243,6 +246,13 @@ def main(argv=None) -> None:
     if args.replay:
         ablation_args.append("--replay")
     sections: dict = {"ablation": run_ablation.main(ablation_args)}
+    judge_path = RESULTS_DIR / "autojudge.json"
+    if judge_path.exists():  # written by run_autojudge.py (LLM-judge proxy, not human)
+        judge = json.loads(judge_path.read_text())
+        for row in sections["ablation"]["table"]:
+            r = judge.get(row["config"])
+            row["llm_judge_hallucination_rate"] = r["hallucination_rate"] if r else float("nan")
+            row["llm_judge_n"] = r["n"] if r else 0
 
     labels = grounding_metrics.read_labels(RESULTS_DIR / "labelling_sheet.csv")
     both = [(r["rater_1"].strip().lower(), r["rater_2"].strip().lower()) for r in labels

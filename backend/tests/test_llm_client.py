@@ -69,6 +69,30 @@ def test_code_fences_tolerated(tmp_path):
     assert client.complete_structured("x", Pet).name == "Rex"
 
 
+def test_retry_after_parsed_and_honoured(tmp_path):
+    err = LLMRateLimitError("429 RESOURCE_EXHAUSTED ... Please retry in 31.17s.")
+    assert err.retry_after == 31.17
+    client, provider, sleeps = _client({"Pet": [err, {"name": "Rex", "legs": 4}]}, tmp_path)
+    assert client.complete_structured("x", Pet).name == "Rex"
+    assert sleeps[0] >= 32
+
+
+def test_rate_limiter_spaces_requests():
+    from minuteai.extract.llm_client import RateLimiter
+
+    t = [0.0]
+    slept: list[float] = []
+
+    def sleep(d):
+        slept.append(d)
+        t[0] += d
+
+    limiter = RateLimiter(rpm=6, clock=lambda: t[0], sleep=sleep)  # one every 10 s
+    for _ in range(3):
+        limiter.wait()
+    assert slept == [10.0, 10.0]
+
+
 def test_backoff_on_rate_limit(tmp_path):
     client, provider, sleeps = _client(
         {"Pet": [rate_limited(), rate_limited(), {"name": "Rex", "legs": 4}]}, tmp_path

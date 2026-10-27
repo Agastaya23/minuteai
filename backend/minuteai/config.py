@@ -26,6 +26,8 @@ class Settings(BaseSettings):
     # Reasoning depth for providers that think by default (Gemini 3.x).
     # Extraction is mostly copying with structure; "low" is ~10x faster than the default.
     llm_thinking: str = "low"
+    # Client-side requests/minute cap (0 = off). Gemini's free tier allows ~5/min.
+    llm_rpm: float = 0
 
     hf_token: str | None = None
     whisper_model: str = "small"

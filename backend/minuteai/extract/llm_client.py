@@ -16,6 +16,7 @@ import hashlib
 import json
 import logging
 import random
+import re
 import threading
 import time
 from dataclasses import dataclass
@@ -54,6 +55,52 @@ class LLMParseError(LLMError):
 
 class LLMRateLimitError(LLMError):
     """Retryable provider error (429, overload, 5xx, connection)."""
+
+    def __init__(self, message: str, retry_after: float | None = None) -> None:
+        super().__init__(message)
+        self.retry_after = retry_after if retry_after is not None else _parse_retry_after(message)
+
+
+def _parse_retry_after(message: str) -> float | None:
+    """Providers put the server-requested wait in the message ("retry in 31.2s")."""
+    m = re.search(r"retry(?:Delay)?['\"]?[:\s]+(?:in\s+)?['\"]?(\d+(?:\.\d+)?)\s*s", message,
+                  re.IGNORECASE)
+    return float(m.group(1)) if m else None
+
+
+class RateLimiter:
+    """Client-side requests-per-minute cap shared by every client of the same model.
+
+    Free tiers enforce tiny RPM quotas (e.g. 5/min); pacing requests is far cheaper
+    than bouncing off 429s. `rpm <= 0` disables it.
+    """
+
+    _shared: dict[str, RateLimiter] = {}
+    _shared_lock = threading.Lock()
+
+    def __init__(self, rpm: float, clock=time.monotonic, sleep=time.sleep) -> None:
+        self.interval = 60.0 / rpm if rpm > 0 else 0.0
+        self._next = 0.0
+        self._lock = threading.Lock()
+        self._clock, self._sleep = clock, sleep
+
+    @classmethod
+    def for_model(cls, model: str, rpm: float) -> RateLimiter:
+        with cls._shared_lock:
+            limiter = cls._shared.get(model)
+            if limiter is None or limiter.interval != (60.0 / rpm if rpm > 0 else 0.0):
+                limiter = cls._shared[model] = cls(rpm)
+            return limiter
+
+    def wait(self) -> None:
+        if not self.interval:
+            return
+        with self._lock:
+            now = self._clock()
+            slot = max(now, self._next)
+            self._next = slot + self.interval
+        if slot > now:
+            self._sleep(slot - now)
 
 
 class LLMRefusalError(LLMError):
@@ -216,16 +263,21 @@ class LLMClient:
         self,
         provider: Provider | None = None,
         log_path: Path | None = None,
-        max_backoff_attempts: int = 5,
-        base_delay: float = 1.0,
+        max_backoff_attempts: int = 8,
+        base_delay: float = 2.0,
+        max_delay: float = 120.0,
         sleep=time.sleep,
+        rpm: float | None = None,
     ) -> None:
         self.provider = provider or make_provider()
         self.log_path = log_path or get_settings().data_path("llm_calls.jsonl")
         self.max_backoff_attempts = max_backoff_attempts
         self.base_delay = base_delay
+        self.max_delay = max_delay
         self._sleep = sleep
         self._lock = threading.Lock()
+        rpm = get_settings().llm_rpm if rpm is None else rpm
+        self.limiter = RateLimiter.for_model(self.provider.model, rpm) if rpm > 0 else None
 
     @property
     def model(self) -> str:
@@ -269,12 +321,17 @@ class LLMClient:
 
     def _generate_with_backoff(self, prompt: str, response_model: type[BaseModel]):
         for n in range(self.max_backoff_attempts):
+            if self.limiter:
+                self.limiter.wait()
             try:
                 return self.provider.generate(prompt, response_model)
-            except LLMRateLimitError:
+            except LLMRateLimitError as e:
                 if n == self.max_backoff_attempts - 1:
                     raise
                 delay = self.base_delay * (2**n) * (1 + random.random() * 0.25)
+                if e.retry_after:  # honour the server-requested wait
+                    delay = max(delay, e.retry_after + 1.0)
+                delay = min(delay, self.max_delay)
                 log.warning("LLM rate limited; retrying in %.1fs", delay)
                 self._sleep(delay)
         raise AssertionError("unreachable")
