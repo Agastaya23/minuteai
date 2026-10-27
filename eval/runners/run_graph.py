@@ -39,9 +39,9 @@ from minuteai.models.meeting import Meeting  # noqa: E402
 from minuteai.search.embedder import get_embedder  # noqa: E402
 
 
-def cached_b(meeting_id: str, transcript) -> MeetingSummary | None:
-    key = cache_key(meeting_id, "B", get_settings().llm_model, transcript.model_version,
-                    len(transcript.utterances))
+def cached_b(meeting_id: str, transcript, model: str, chunk_tokens: int) -> MeetingSummary | None:
+    key = cache_key(meeting_id, "B", model, transcript.model_version,
+                    len(transcript.utterances), chunk_tokens)
     path = Path(__file__).resolve().parents[1] / "cache" / "extract" / "B" / f"{key}.json"
     return MeetingSummary.model_validate_json(path.read_text()) if path.exists() else None
 
@@ -49,6 +49,8 @@ def cached_b(meeting_id: str, transcript) -> MeetingSummary | None:
 def main(argv=None) -> dict:
     p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawTextHelpFormatter)
     p.add_argument("--series", default="ES2002")
+    p.add_argument("--model", default=None, help="model used by run_ablation (cache key)")
+    p.add_argument("--chunk-tokens", type=int, default=6000)
     args = p.parse_args(argv)
     ensure_dirs()
 
@@ -60,7 +62,8 @@ def main(argv=None) -> dict:
         m = ami.load_meeting(mid)
         if m.transcript is None:
             continue
-        b = cached_b(mid, m.transcript)
+        b = cached_b(mid, m.transcript, args.model or get_settings().llm_model,
+                     args.chunk_tokens)
         if b is None:
             missing.append(mid)
             continue

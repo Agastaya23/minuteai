@@ -170,3 +170,14 @@ def test_qmsum_loader(tmp_path):
     [m] = qmsum.load(root=tmp_path)
     assert m.transcript.utterances[1].speaker_name == "B"
     assert m.queries[0].relevant_spans == [(1, 1)]
+
+
+def test_derived_filter_rates():
+    rows = [{"config": "B", "meeting_id": "m", "text": t, "j": lab}
+            for t, lab in (("a", "supported"), ("b", "unsupported"), ("c", "contradicted"),
+                           ("d", "supported"))]
+    rows.append({"config": "A", "meeting_id": "m", "text": "a", "j": "unsupported"})
+    out = grounding.derived_filter_rates(rows, "j", {"C-STRICT": {("m", "a"), ("m", "d")},
+                                                     "C-PERMISSIVE": {("m", t) for t in "abcd"}})
+    assert out["C-STRICT"]["hallucination_rate"] == 0.0 and out["C-STRICT"]["n"] == 2
+    assert out["C-PERMISSIVE"]["hallucination_rate"] == 0.5

@@ -61,7 +61,9 @@ class HybridRetriever:
             self._bm25_size = len(corpus)
         return self._bm25
 
-    def retrieve(self, query: str, filters: SearchFilters | None = None, k: int = 8) -> list[Hit]:
+    def retrieve(self, query: str, filters: SearchFilters | None = None, k: int = 8,
+                 mode: str = "hybrid") -> list[Hit]:
+        """mode: "hybrid" (RRF of both), or "bm25" / "dense" alone (for ablations)."""
         filters = filters or SearchFilters()
         with self.index.lock:
             entries = list(self.index.entries)
@@ -84,7 +86,9 @@ class HybridRetriever:
             dense_ranks = {pos: r for r, (pos, _) in enumerate(dense)}
 
         fused: dict[int, float] = {}
-        for ranks in (bm25_ranks, dense_ranks):
+        sources = {"hybrid": (bm25_ranks, dense_ranks), "bm25": (bm25_ranks,),
+                   "dense": (dense_ranks,)}[mode]
+        for ranks in sources:
             for pos, r in ranks.items():
                 fused[pos] = fused.get(pos, 0.0) + 1.0 / (RRF_K + r + 1)
         top = sorted(fused.items(), key=lambda kv: -kv[1])[:k]

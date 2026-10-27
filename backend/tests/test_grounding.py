@@ -170,6 +170,9 @@ def test_confidence_weighted_by_severity(v, transcript, span):
 
 def test_normalize():
     assert normalize("Hello,   WORLD!  It's two") == "hello world it 2"
+    assert normalize("twenty five Euro, thirty") == "25 euro 30"
+    assert normalize("no V_C_R or T_V controls") == "no vcr or tv controls"
+    assert normalize("twenty-five") == "25"
 
 
 def test_cross_meeting_evidence(span):

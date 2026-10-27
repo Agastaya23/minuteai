@@ -190,27 +190,35 @@ def run(args) -> dict:
     # cost per config (only calls actually made; cached runs reuse earlier logs)
     hours = {m: transcripts[m].duration_sec / 3600 for m in transcripts}
     for row in table:
-        calls = [c for c in cost_metrics.load_calls(CACHE_DIR / f"llm_calls_{row['config']}.jsonl")
-                 if c.get("meeting_id") in transcripts or c.get("meeting_id") is None]
-        if row["config"].startswith("C-"):
-            calls = [c for c in cost_metrics.load_calls(CACHE_DIR / "llm_calls_B.jsonl")
-                     if c.get("meeting_id") in transcripts]
+        model = "replay" if args.replay else (args.model or get_settings().llm_model)
+        source = "B" if row["config"].startswith("C-") else row["config"]
+        calls = [c for c in cost_metrics.load_calls(CACHE_DIR / f"llm_calls_{source}.jsonl")
+                 if c.get("meeting_id") in transcripts
+                 and (args.replay or c.get("model") == model)]
         s = cost_metrics.summarize(calls, hours)
         row["llm_calls"] = s["totals"]["calls"]
         row["tokens"] = s["totals"]["input_tokens"] + s["totals"]["output_tokens"]
         row["cost_usd"] = s["totals"]["cost_usd"]
 
-    # human labels (if the labelling sheet has come back)
+    # Labels: human (rater_1 in labelling_sheet.csv) and the LLM-judge proxy
+    # (labelling_sheet.autojudge.csv). A and B are scored directly; each C mode on the
+    # labelled B items it keeps (same statements, see derived_filter_rates).
     sheet = RESULTS_DIR / "labelling_sheet.csv"
     labels = grounding_metrics.read_labels(sheet)
-    rates = grounding_metrics.hallucination_rates(labels) if labels else {}
-    for row in table:
-        r = rates.get(row["config"])
-        row["hallucination_rate"] = r["hallucination_rate"] if r else float("nan")
-        row["labelled_n"] = r["n"] if r else 0
+    kept = {c: {(mid, st.text) for mid, s in summaries[c].items()
+                for st in grounding_metrics.statements(c, s)}
+            for c in CONFIGS if c.startswith("C-")}
+    judged = grounding_metrics.read_labels(sheet.with_suffix(".autojudge.csv"))
+    for prefix, rows, col in (("", labels, "rater_1"), ("llm_judge_", judged, "llm_judge")):
+        direct = grounding_metrics.hallucination_rates(rows, col) if rows else {}
+        derived = grounding_metrics.derived_filter_rates(rows, col, kept) if rows else {}
+        for row in table:
+            r = derived.get(row["config"]) or direct.get(row["config"])
+            row[f"{prefix}hallucination_rate"] = r["hallucination_rate"] if r else float("nan")
+            row[f"{prefix}{'labelled_n' if not prefix else 'n'}"] = r["n"] if r else 0
     if not any((r.get("rater_1") or "").strip() for r in labels):
         items = []
-        for config in ("A", "B", "C-BALANCED"):
+        for config in ("A", "B"):  # C ⊆ B: C is scored on the labelled B items
             for s in summaries[config].values():
                 items += grounding_metrics.statements(config, s)
         sample = grounding_metrics.stratified_sample(items, args.label_n)

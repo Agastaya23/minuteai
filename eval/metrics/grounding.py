@@ -124,6 +124,30 @@ def hallucination_rates(rows: list[dict], rater: str = "rater_1") -> dict[str, d
     return out
 
 
+def derived_filter_rates(
+    rows: list[dict], label_col: str, kept: dict[str, set[tuple[str, str]]],
+    source_config: str = "B",
+) -> dict[str, dict]:
+    """Hallucination rate of each filter mode measured on the *same* labelled items.
+
+    Every artifact the filter keeps (config C-*) is an artifact of config B, so C's rate
+    is the rate among labelled B items that the mode keeps. This compares B and C on
+    identical statements instead of on two independent samples.
+    `kept[config]` = {(meeting_id, statement text)} that config retained.
+    """
+    labelled = [r for r in rows if r["config"] == source_config
+                and (r.get(label_col) or "").strip().lower() in LABELS]
+    out = {}
+    for config, keep in kept.items():
+        c = Counter(r[label_col].strip().lower() for r in labelled
+                    if (r["meeting_id"], r["text"]) in keep)
+        n = sum(c.values())
+        out[config] = {"n": n, **{k: c[k] for k in LABELS},
+                       "hallucination_rate": (c["unsupported"] + c["contradicted"]) / n
+                       if n else float("nan")}
+    return out
+
+
 def retention(n_total: int, n_kept: int) -> float:
     return n_kept / n_total if n_total else float("nan")
 

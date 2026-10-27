@@ -79,12 +79,35 @@ COMMON_CAPITALIZED = {
 }
 
 
+_SPELLED_ACRONYM = re.compile(r"\b(?:[A-Za-z]_)+[A-Za-z]\b")  # AMI writes "TV" as "T_V"
+_TENS = {"twenty": 20, "thirty": 30, "forty": 40, "fifty": 50, "sixty": 60, "seventy": 70,
+         "eighty": 80, "ninety": 90}
+_UNITS = {"one": 1, "two": 2, "three": 3, "four": 4, "five": 5, "six": 6, "seven": 7,
+          "eight": 8, "nine": 9}
+
+
+def _numbers(tokens: list[str]) -> list[str]:
+    """Number words → digits, including compounds ("twenty five" → "25")."""
+    out: list[str] = []
+    i = 0
+    while i < len(tokens):
+        t = tokens[i]
+        nxt = tokens[i + 1] if i + 1 < len(tokens) else ""
+        if t in _TENS and nxt in _UNITS:
+            out.append(str(_TENS[t] + _UNITS[nxt]))
+            i += 2
+            continue
+        out.append(str(_TENS[t]) if t in _TENS else NUMBER_WORDS.get(t, t))
+        i += 1
+    return out
+
+
 def normalize(text: str) -> str:
     """lowercase, strip punctuation (keep apostrophes/%), collapse whitespace, digits for words."""
+    text = _SPELLED_ACRONYM.sub(lambda m: m.group(0).replace("_", ""), text)
     text = text.lower().replace("’", "'").translate(_PUNCT)
     text = re.sub(r"'s\b", "", text).replace("'", "")
-    tokens = [NUMBER_WORDS.get(t, t) for t in text.split()]
-    return " ".join(tokens)
+    return " ".join(_numbers(text.replace("-", " ").split()))
 
 
 @lru_cache(maxsize=1)

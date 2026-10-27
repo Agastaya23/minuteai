@@ -81,13 +81,17 @@ def eval_search(dataset: str, n: int | None) -> dict | None:
             queries += [(q.query, q.meeting_id, q.relevant_spans) for q in m.queries
                         if q.relevant_spans]
     retriever = HybridRetriever(index)
-    results = []
-    for query, mid, spans in queries:
-        hits = retriever.retrieve(query, k=10)
-        retrieved = [(h.entry.start_utt, h.entry.end_utt) if h.entry.meeting_id == mid
-                     else (-10, -10) for h in hits]
-        results.append((retrieved, spans))
-    return {"embedder": index.embedder.name, **search_metrics.evaluate(results)}
+    rows = []
+    for mode in ("bm25", "dense", "hybrid"):
+        results = []
+        for query, mid, spans in queries:
+            hits = retriever.retrieve(query, k=10, mode=mode)
+            retrieved = [(h.entry.start_utt, h.entry.end_utt) if h.entry.meeting_id == mid
+                         else (-10, -10) for h in hits]
+            results.append((retrieved, spans))
+        rows.append({"retriever": mode, "embedder": index.embedder.name,
+                     **search_metrics.evaluate(results)})
+    return {"modes": rows, **rows[-1]}
 
 
 # -- commitments ----------------------------------------------------------------
@@ -165,6 +169,8 @@ def write_report(sections: dict, args) -> Path:
               "(unsupported + contradicted) / labelled; blank until labels are filled in.",
               "* **llm_judge_hallucination_rate** is the same measure labelled automatically by "
               "an LLM judge (`run_autojudge.py`): a preliminary proxy, not ground truth.",
+              "* C rows are measured on the labelled B statements each mode keeps (C ⊆ B), so "
+              "B vs C compares identical statements.",
               "* **unsupported_entity_rate** is the automatic proxy: the share of artifacts with a "
               "name, number or date that appears nowhere in the transcript.", "",
               "![](figures/unsupported_entity_rate.png)", "",
@@ -196,8 +202,10 @@ def write_report(sections: dict, args) -> Path:
     srch = sections.get("search")
     lines += ["## 6. Retrieval", ""]
     if srch:
-        lines += [md_table([srch], ["embedder", "n", "hit@1", "hit@3", "hit@5", "hit@10", "mrr"]),
-                  ""]
+        lines += ["Global index over all meetings; a hit must be in the right meeting *and* "
+                  "overlap QMSum's gold span.", "",
+                  md_table(srch.get("modes", [srch]), ["retriever", "embedder", "n", "hit@1",
+                                                       "hit@3", "hit@5", "hit@10", "mrr"]), ""]
     else:
         lines += ["QMSum not found — clone it into `eval/data/qmsum`.", ""]
 
@@ -254,13 +262,6 @@ def main(argv=None) -> None:
         ablation_args += ["--model", args.model]
     ablation_args += ["--chunk-tokens", str(args.chunk_tokens)]
     sections: dict = {"ablation": run_ablation.main(ablation_args)}
-    judge_path = RESULTS_DIR / "autojudge.json"
-    if judge_path.exists():  # written by run_autojudge.py (LLM-judge proxy, not human)
-        judge = json.loads(judge_path.read_text())
-        for row in sections["ablation"]["table"]:
-            r = judge.get(row["config"])
-            row["llm_judge_hallucination_rate"] = r["hallucination_rate"] if r else float("nan")
-            row["llm_judge_n"] = r["n"] if r else 0
 
     labels = grounding_metrics.read_labels(RESULTS_DIR / "labelling_sheet.csv")
     both = [(r["rater_1"].strip().lower(), r["rater_2"].strip().lower()) for r in labels
@@ -276,8 +277,10 @@ def main(argv=None) -> None:
     calls = []
     from eval.common import CACHE_DIR
 
+    model = sections["ablation"]["model"]
     for config in ("A", "B"):
-        calls += cost_metrics.load_calls(CACHE_DIR / f"llm_calls_{config}.jsonl")
+        calls += [c for c in cost_metrics.load_calls(CACHE_DIR / f"llm_calls_{config}.jsonl")
+                  if c.get("model") == model or model == "replay"]
     sections["cost"] = cost_metrics.summarize(calls, sections["ablation"]["hours"])
 
     (RESULTS_DIR / "all_results.json").write_text(json.dumps(sections, indent=2, default=str))
