@@ -83,10 +83,10 @@ class MeetingRepository:
             kwargs["ExclusiveStartKey"] = resp["LastEvaluatedKey"]
 
     def _delete_prefix(self, pk: str, prefix: str) -> None:
-        items = self._paginate(
-            KeyConditionExpression=Key("PK").eq(pk) & Key("SK").begins_with(prefix),
-            ProjectionExpression="PK, SK",
-        )
+        condition = Key("PK").eq(pk)
+        if prefix:
+            condition = condition & Key("SK").begins_with(prefix)
+        items = self._paginate(KeyConditionExpression=condition, ProjectionExpression="PK, SK")
         with self.table.batch_writer() as batch:
             for i in items:
                 batch.delete_item(Key={"PK": i["PK"], "SK": i["SK"]})
