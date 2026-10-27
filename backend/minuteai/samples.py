@@ -7,6 +7,8 @@ at a fixed speaking rate so they are monotonic and realistic.
 
 from __future__ import annotations
 
+import json
+import re
 from datetime import UTC, datetime, timedelta
 
 from minuteai.models.transcript import Transcript, Utterance, Word
@@ -34,7 +36,7 @@ SPRINT_PLANNING: list[tuple[str, str]] = [
     ("SPEAKER_01", "Someone should ask the fraud team for their latency budget."),
     ("SPEAKER_00", "Right, let's park that until next week."),
     ("SPEAKER_02", "One more thing, the on-call rotation needs an update for December."),
-    ("SPEAKER_00", "I will update the on-call rotation before the end of the month."),
+    ("SPEAKER_00", "I will update the on-call rotation by next Monday."),
     ("SPEAKER_01", "Sounds good. Should we keep the demo on Thursday?"),
     ("SPEAKER_00", "Yes, the demo stays on Thursday at 3 pm. Thanks everyone."),
 ]
@@ -122,3 +124,203 @@ def sample_occurred_at(meeting_id: str, now: datetime | None = None) -> datetime
     return (now - timedelta(days=SAMPLE_MEETINGS[meeting_id]["days_ago"])).replace(
         hour=10, minute=0, second=0, microsecond=0
     )
+
+
+# ---------------------------------------------------------------------------
+# Recorded LLM responses for the sample meetings.
+#
+# They let the seed script and offline demos run the *real* extraction
+# pipeline (evidence attachment, merging, due-date resolution, grounding
+# filter) without an API key. A few artifacts are deliberately ungrounded —
+# a non-existent utterance, a fabricated quote, a wrong speaker, an
+# unsupported number — so the dropped-artifacts view has something to show.
+# ---------------------------------------------------------------------------
+
+
+def _ev(*pairs) -> list[dict]:
+    return [{"utt_id": u, "quote": q} for u, q in pairs]
+
+
+SAMPLE_LLM_RESPONSES: dict[str, dict[str, dict]] = {
+    "demo-sprint-planning": {
+        "LLMSummaryResponse": {"sentences": [
+            {"text": "The team agreed to move the payments service to Postgres 16 because it "
+                     "offers better JSON support.",
+             "evidence": _ev((4, "Postgres gives us better JSON support"),
+                             (6, "We will move the payments service to Postgres 16"))},
+            {"text": "Rahul will write the migration script and Ananya will set up the staging "
+                     "database.",
+             "evidence": _ev((7, "I will write the migration script by Friday"),
+                             (8, "can you set up the staging database on port 5432"),
+                             (9, "I can have staging ready by Wednesday"))},
+            {"text": "Checkout latency is around 800 milliseconds at p95, mostly because the "
+                     "fraud check is synchronous.",
+             "evidence": _ev((10, "We are seeing around 800 milliseconds at p95"),
+                             (11, "Most of that is the fraud check call. It is synchronous"))},
+            {"text": "Moving to Postgres is expected to cut database costs by 30 percent.",
+             "evidence": _ev((4, "MySQL would cost about the same"))},
+            {"text": "The team also agreed to hire two more backend engineers.",
+             "evidence": _ev((42, "we should hire two more backend engineers"))},
+            {"text": "The demo stays on Thursday at 3 pm.",
+             "evidence": _ev((19, "the demo stays on Thursday at 3 pm"))},
+        ]},
+        "LLMDecisionsResponse": {"decisions": [
+            {"statement": "Move the payments service to Postgres 16",
+             "rationale": "Better JSON support and alignment with the analytics team",
+             "participants": ["SPEAKER_00", "SPEAKER_01", "SPEAKER_02"], "status": "agreed",
+             "confidence": 0.95,
+             "evidence": _ev((2, "Postgres 16 looks like the best fit"),
+                             (5, "I agree with Ananya"),
+                             (6, "we are agreed. We will move the payments service to Postgres 16"))},
+            {"statement": "Defer the decision on making the fraud check asynchronous until the "
+                          "fraud team provides numbers",
+             "rationale": None, "participants": ["SPEAKER_00"], "status": "deferred",
+             "confidence": 0.8,
+             "evidence": _ev((13, "Let's not decide that today"),
+                             (15, "let's park that until next week"))},
+            {"statement": "Keep the demo on Thursday at 3 pm", "rationale": None,
+             "participants": ["SPEAKER_00", "SPEAKER_01"], "status": "agreed", "confidence": 0.9,
+             "evidence": _ev((18, "Should we keep the demo on Thursday?"),
+                             (19, "the demo stays on Thursday at 3 pm"))},
+            {"statement": "Adopt Redis to cache fraud risk scores", "rationale": None,
+             "participants": ["SPEAKER_02"], "status": "agreed", "confidence": 0.6,
+             "evidence": _ev((12, "we will use Redis for the risk score cache"))},
+        ]},
+        "LLMActionItemsResponse": {"action_items": [
+            {"description": "Write the Postgres migration script", "owner": "Rahul",
+             "owner_speaker_label": "SPEAKER_01", "owner_resolution_method": "self_commitment",
+             "owner_confidence": 0.95, "due_raw": "by Friday", "confidence": 0.95,
+             "evidence": _ev((7, "I will write the migration script by Friday"))},
+            {"description": "Set up the staging database on port 5432", "owner": "Ananya",
+             "owner_speaker_label": "SPEAKER_02", "owner_resolution_method": "assigned_by_other",
+             "owner_confidence": 0.9, "due_raw": "by Wednesday", "confidence": 0.9,
+             "evidence": _ev((8, "Ananya, can you set up the staging database on port 5432?"),
+                             (9, "I can have staging ready by Wednesday"))},
+            {"description": "Ask the fraud team for their latency budget", "owner": None,
+             "owner_speaker_label": None, "owner_resolution_method": "unresolved",
+             "owner_confidence": 0.0, "due_raw": None, "confidence": 0.8,
+             "evidence": _ev((14, "Someone should ask the fraud team for their latency budget"))},
+            {"description": "Update the on-call rotation for December", "owner": "Priya",
+             "owner_speaker_label": "SPEAKER_00", "owner_resolution_method": "self_commitment",
+             "owner_confidence": 0.9, "due_raw": "by next Monday", "confidence": 0.9,
+             "evidence": _ev((16, "the on-call rotation needs an update for December"),
+                             (17, "I will update the on-call rotation by next Monday"))},
+            {"description": "Benchmark the asynchronous fraud check", "owner": "Rahul",
+             "owner_speaker_label": "SPEAKER_01", "owner_resolution_method": "explicit_name",
+             "owner_confidence": 0.5, "due_raw": None, "confidence": 0.5,
+             "evidence": _ev((12, "make the fraud check asynchronous"))},
+        ]},
+    },
+    "demo-sprint-review": {
+        "LLMSummaryResponse": {"sentences": [
+            {"text": "Rahul finished the Postgres migration script and it is merged.",
+             "evidence": _ev((1, "I finished the migration script for Postgres, it is merged"))},
+            {"text": "Staging is not ready yet and has slipped to next Monday.",
+             "evidence": _ev((2, "Staging is not ready yet, I need until next Monday"),
+                             (3, "staging slips to Monday"))},
+            {"text": "The fraud team's latency budget is 200 milliseconds, so the team agreed to "
+                     "make the fraud check asynchronous this sprint.",
+             "evidence": _ev((4, "Their latency budget is 200 milliseconds"),
+                             (6, "we will make the fraud check asynchronous this sprint"))},
+            {"text": "Payments stays on Postgres even though the analytics team now wants MySQL.",
+             "evidence": _ev((9, "the analytics team now wants to stay on MySQL"),
+                             (10, "Payments stays on Postgres"))},
+        ]},
+        "LLMDecisionsResponse": {"decisions": [
+            {"statement": "Make the fraud check asynchronous this sprint", "rationale":
+                "The fraud team's latency budget is 200 milliseconds",
+             "participants": ["SPEAKER_00", "SPEAKER_02"], "status": "agreed", "confidence": 0.9,
+             "evidence": _ev((5, "making the fraud check asynchronous is definitely worth it"),
+                             (6, "we will make the fraud check asynchronous this sprint"))},
+            {"statement": "Keep the payments service on Postgres", "rationale": None,
+             "participants": ["SPEAKER_00"], "status": "agreed", "confidence": 0.85,
+             "evidence": _ev((10, "That does not change our decision. Payments stays on Postgres"))},
+        ]},
+        "LLMActionItemsResponse": {"action_items": [
+            {"description": "Finish setting up the staging database", "owner": "Ananya",
+             "owner_speaker_label": "SPEAKER_02", "owner_resolution_method": "self_commitment",
+             "owner_confidence": 0.85, "due_raw": "until next Monday", "confidence": 0.85,
+             "evidence": _ev((2, "Staging is not ready yet, I need until next Monday"))},
+            {"description": "Implement the asynchronous fraud check", "owner": "Ananya",
+             "owner_speaker_label": "SPEAKER_02", "owner_resolution_method": "self_commitment",
+             "owner_confidence": 0.9, "due_raw": None, "confidence": 0.9,
+             "evidence": _ev((7, "I can own the asynchronous fraud check work"))},
+            {"description": "Write the rollback plan", "owner": "Rahul",
+             "owner_speaker_label": "SPEAKER_01", "owner_resolution_method": "self_commitment",
+             "owner_confidence": 0.95, "due_raw": "by Wednesday", "confidence": 0.95,
+             "evidence": _ev((11, "I will write the rollback plan by Wednesday"))},
+        ]},
+    },
+    "demo-sprint-retro": {
+        "LLMSummaryResponse": {"sentences": [
+            {"text": "Staging went live on Monday and the rollback plan has been written and "
+                     "reviewed.",
+             "evidence": _ev((1, "Staging is done, it went live on Monday"),
+                             (2, "The rollback plan is written and reviewed"))},
+            {"text": "The asynchronous fraud check is about half done and should finish next week.",
+             "evidence": _ev((4, "it is about half done. I expect to finish it next week"))},
+            {"text": "The team decided to cancel the Thursday demos going forward.",
+             "evidence": _ev((5, "We decided to cancel the Thursday demos going forward"))},
+        ]},
+        "LLMDecisionsResponse": {"decisions": [
+            {"statement": "Cancel the Thursday demos going forward",
+             "rationale": "They take too long", "participants": ["SPEAKER_00"],
+             "status": "reversed", "confidence": 0.9,
+             "evidence": _ev((5, "We decided to cancel the Thursday demos going forward"))},
+        ]},
+        "LLMActionItemsResponse": {"action_items": [
+            {"description": "Finish the asynchronous fraud check", "owner": "Ananya",
+             "owner_speaker_label": "SPEAKER_02", "owner_resolution_method": "self_commitment",
+             "owner_confidence": 0.85, "due_raw": "next week", "confidence": 0.85,
+             "evidence": _ev((4, "I expect to finish it next week"))},
+            {"description": "Send the release notes to the support team", "owner": "Rahul",
+             "owner_speaker_label": "SPEAKER_01", "owner_resolution_method": "self_commitment",
+             "owner_confidence": 0.95, "due_raw": "tomorrow", "confidence": 0.95,
+             "evidence": _ev((6, "I will send the release notes to the support team tomorrow"))},
+        ]},
+    },
+}
+
+_TOPIC_KEYWORDS = [
+    (("migration", "postgres", "mysql", "database"), "Database migration to Postgres"),
+    (("latency", "fraud"), "Checkout latency and the fraud check"),
+    (("on-call", "demo", "rotation"), "On-call rotation and demo schedule"),
+    (("staging",), "Staging environment"),
+    (("release", "retro"), "Release follow-ups"),
+]
+
+
+def _title_segments(prompt: str) -> dict:
+    blocks = re.split(r"^Segment (\d+):$", prompt, flags=re.MULTILINE)
+    topics = []
+    for i in range(1, len(blocks) - 1, 2):
+        text = blocks[i + 1].lower()
+        title = next((t for keys, t in _TOPIC_KEYWORDS if any(k in text for k in keys)),
+                     "General discussion")
+        topics.append({"segment": int(blocks[i]), "title": title})
+    return {"topics": topics}
+
+
+class ReplayProvider:
+    """LLM provider that replays SAMPLE_LLM_RESPONSES for one sample meeting."""
+
+    name = "replay"
+
+    def __init__(self, meeting_id: str) -> None:
+        self.meeting_id = meeting_id
+        self.model = "replay/sample"
+
+    def generate(self, prompt: str, response_model):
+        from minuteai.extract.llm_client import ProviderResponse
+
+        name = response_model.__name__
+        if name == "LLMTopicTitlesResponse":
+            body = _title_segments(prompt)
+        else:
+            body = SAMPLE_LLM_RESPONSES[self.meeting_id].get(name)
+            if body is None:
+                body = {f: [] for f in response_model.model_fields if
+                        f in ("sentences", "decisions", "action_items")}
+        text = json.dumps(body)
+        return ProviderResponse(text=text, input_tokens=len(prompt) // 4,
+                                output_tokens=len(text) // 4, stop_reason="end_turn")

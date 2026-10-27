@@ -36,6 +36,7 @@ class ActionItem(BaseModel):
     item_id: str
     description: str
     owner: str | None = None
+    owner_speaker_label: str | None = None
     owner_confidence: float = Field(default=0.0, ge=0.0, le=1.0)
     owner_resolution_method: OwnerResolution = "unresolved"
     due_date: date | None = None
