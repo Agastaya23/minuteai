@@ -150,13 +150,19 @@ class GroundingFilter:
         return kept, dropped
 
     def _write_log(self, dropped: list[DroppedArtifact]) -> None:
-        if not dropped:
-            return
-        with _log_lock:
-            self.log_path.parent.mkdir(parents=True, exist_ok=True)
-            with self.log_path.open("a") as f:
-                for d in dropped:
-                    f.write(json.dumps(d.model_dump(mode="json")) + "\n")
+        log_dropped(dropped, self.log_path)
+
+
+def log_dropped(dropped: list[DroppedArtifact], path: Path | None = None) -> None:
+    """Append rejected artifacts to the research log (data/dropped_artifacts.jsonl)."""
+    if not dropped:
+        return
+    path = path or get_settings().data_path("dropped_artifacts.jsonl")
+    with _log_lock:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        with path.open("a") as f:
+            for d in dropped:
+                f.write(json.dumps(d.model_dump(mode="json")) + "\n")
 
 
 def reason_breakdown(dropped: list[DroppedArtifact]) -> Counter:

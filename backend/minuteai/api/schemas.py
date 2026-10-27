@@ -2,13 +2,14 @@
 
 from __future__ import annotations
 
-from datetime import date, datetime
+from datetime import datetime
 from typing import Literal
 
 from pydantic import BaseModel, Field
 
 from minuteai.models.evidence import EvidenceSpan
 from minuteai.models.meeting import Meeting, MeetingStatus
+from minuteai.models.search import SearchFilters
 
 
 class CreateMeetingRequest(BaseModel):
@@ -50,15 +51,6 @@ class HealthResponse(BaseModel):
     s3: str
     dynamodb: str
     llm_model: str
-
-
-class SearchFilters(BaseModel):
-    date_from: date | None = None
-    date_to: date | None = None
-    series_id: str | None = None
-    participant: str | None = None
-    artifact_types: list[Literal["utterances", "decision", "action_item"]] | None = None
-    meeting_ids: list[str] | None = None
 
 
 class SearchRequest(BaseModel):

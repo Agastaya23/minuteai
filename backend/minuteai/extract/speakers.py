@@ -22,8 +22,9 @@ SELF_INTRO = [
     re.compile(rf"\b(?:I'm|I am|my name is|this is|it's)\s+{_NAME}\b"),
     re.compile(rf"(?:^|[.,!?]\s*){_NAME}\s+here\b"),
 ]
-ADDRESS_PREV = re.compile(rf"^(?:thanks|thank you|okay|ok|great|right|agreed|good point)[,!]?\s+{_NAME}\b",
-                          re.IGNORECASE)
+ADDRESS_PREV = re.compile(
+    rf"^(?:thanks|thank you|okay|ok|great|right|agreed|good point)[,!]?\s+{_NAME}\b", re.IGNORECASE
+)
 ADDRESS_NEXT = re.compile(rf"\b{_NAME},\s+(?:can|could|would|will|please|do|are|what|how)\b")
 
 NOT_NAMES = frozenset(

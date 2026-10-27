@@ -57,3 +57,9 @@ target-version = "py311"
 [tool.ruff.lint]
 select = ["E", "F", "I", "B", "UP", "E722"]
 ignore = ["B008"]
+
+[tool.ruff.lint.per-file-ignores]
+# key-design table in the module docstring
+"minuteai/storage/schema.py" = ["E501"]
+# transcript lines and recorded LLM responses read better unwrapped
+"minuteai/samples.py" = ["E501"]

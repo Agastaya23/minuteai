@@ -58,8 +58,8 @@ def aws(monkeypatch):
     from moto import mock_aws
 
     with mock_aws():
-        from minuteai.storage.schema import create_table
         from minuteai.storage.s3_store import S3Store
+        from minuteai.storage.schema import create_table
 
         create_table()
         S3Store().ensure_bucket()

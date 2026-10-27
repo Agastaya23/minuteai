@@ -8,4 +8,7 @@ from minuteai.api.processing import Services
 
 
 def default_hooks(services: Services) -> list[Callable[[str], None]]:
-    return []
+    hooks: list[Callable[[str], None]] = []
+    if services.search is not None:
+        hooks.append(services.search.index_meeting)
+    return hooks

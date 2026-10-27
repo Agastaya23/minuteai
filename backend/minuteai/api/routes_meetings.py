@@ -102,9 +102,11 @@ def get_meeting(meeting_id: str, repo: MeetingRepository = Depends(get_repo)):
 
 
 @router.delete("/{meeting_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_meeting(meeting_id: str, repo: MeetingRepository = Depends(get_repo)):
-    meeting_or_404(repo, meeting_id)
-    repo.delete_meeting(meeting_id)
+def delete_meeting(meeting_id: str, services: Services = Depends(get_services)):
+    meeting_or_404(services.repo, meeting_id)
+    services.repo.delete_meeting(meeting_id)
+    if services.search is not None:
+        services.search.remove_meeting(meeting_id)
 
 
 @router.get("/{meeting_id}/transcript", response_model=Transcript)
