@@ -5,9 +5,15 @@
 Reads eval/results/labelling_sheet.csv and writes labelling_sheet.autojudge.csv with an
 `llm_judge` column (supported / unsupported / contradicted) and a reason, plus
 autojudge.json with per-config rates. The rater_1 / rater_2 columns are never touched:
-the headline hallucination rate must come from people. The judge sees the same
-material a human rater would: the cited utterances with ±3 utterances of context, or
-the whole transcript for statements that cite nothing (config A).
+the headline hallucination rate must come from people.
+
+Context modes — every config must be judged the same way, since A cites nothing:
+  retrieved (default)  the 8 most relevant 5-utterance windows of the meeting for the
+                       statement (hybrid BM25 + dense), identical procedure for A, B, C
+  full                 the whole transcript (best, but ~30k tokens per call: too slow
+                       on free-tier token quotas)
+  cited                cited utterances ±3 only — a citation-sufficiency check; NOT
+                       comparable across configs
 """
 
 from __future__ import annotations
@@ -41,14 +47,16 @@ You are checking meeting minutes against the meeting transcript.
 Statement from the minutes:
   "{statement}"
 
-Transcript excerpt:
+Speaker names in the minutes may refer to the labelled speakers below.
+
+Relevant parts of the meeting transcript:
 {excerpt}
 
 Label the statement:
 - "supported": everything it asserts (including names, owners, numbers, dates) is stated or
-  directly implied by the excerpt.
-- "unsupported": some part of it is not in the excerpt (invented or unverifiable detail).
-- "contradicted": the excerpt says something incompatible with it.
+  directly implied by these transcript parts.
+- "unsupported": some part of it is not in these parts (invented or unverifiable detail).
+- "contradicted": the transcript says something incompatible with it.
 
 Return JSON: {{"label": "supported"|"unsupported"|"contradicted", "reason": str}}
 """
@@ -69,11 +77,31 @@ def transcripts_for(meeting_ids: set[str]):
     return out
 
 
-def excerpt(row: dict, transcript) -> str:
+_retrievers: dict[str, object] = {}
+
+
+def retrieved_context(statement: str, transcript, k: int = 8) -> str:
+    from minuteai.models.meeting import Meeting
+    from minuteai.search.hybrid import HybridRetriever
+    from minuteai.search.index import SearchIndex
+
+    mid = transcript.meeting_id
+    if mid not in _retrievers:
+        index = SearchIndex()
+        index.add_meeting(Meeting(meeting_id=mid, title=mid), transcript, None)
+        _retrievers[mid] = HybridRetriever(index)
+    hits = _retrievers[mid].retrieve(statement, k=k)
+    keep = {u for h in hits for u in range(h.entry.start_utt, h.entry.end_utt + 1)}
+    return render_utterances([u for u in transcript.utterances if u.utt_id in keep])
+
+
+def excerpt(row: dict, transcript, context: str = "retrieved") -> str:
     import re
 
+    if context == "retrieved":
+        return retrieved_context(row["text"], transcript)
     cited = [int(x) for x in re.findall(r"^\[(\d+)\]", row["cited_evidence"], re.MULTILINE)]
-    if not cited:
+    if context == "full" or not cited:
         return render_utterances(transcript.utterances)
     keep: set[int] = set()
     for u in cited:
@@ -87,6 +115,7 @@ def main(argv=None) -> dict:
     p.add_argument("--limit", type=int, default=None)
     p.add_argument("--model", default=None,
                    help="judge model; ideally different from the extraction model")
+    p.add_argument("--context", choices=["retrieved", "full", "cited"], default="retrieved")
     args = p.parse_args(argv)
     rows = list(csv.DictReader(args.sheet.open()))[: args.limit]
     out_path = args.sheet.with_suffix(".autojudge.csv")
@@ -110,7 +139,8 @@ def main(argv=None) -> dict:
             if t is not None:
                 try:
                     j = llm.complete_structured(
-                        JUDGE_PROMPT.format(statement=r["text"], excerpt=excerpt(r, t)),
+                        JUDGE_PROMPT.format(statement=r["text"],
+                                            excerpt=excerpt(r, t, args.context)),
                         JudgeLabel, purpose="judge", meeting_id=r["meeting_id"])
                     label, reason = j.label, j.reason
                 except LLMQuotaExhaustedError as e:

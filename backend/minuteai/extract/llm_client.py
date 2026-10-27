@@ -193,6 +193,7 @@ class GeminiProvider:
         self.model = model
 
     def generate(self, prompt: str, response_model: type[BaseModel]) -> ProviderResponse:
+        import httpx
         from google.genai import errors
 
         try:
@@ -219,6 +220,8 @@ class GeminiProvider:
             if e.code in (429, 500, 502, 503, 504):
                 raise LLMRateLimitError(str(e)) from e
             raise LLMError(f"Gemini API error {e.code}: {e}") from e
+        except httpx.TransportError as e:  # DNS/connection blips are transient
+            raise LLMRateLimitError(f"connection error: {e}") from e
         usage = resp.usage_metadata
         thoughts = getattr(usage, "thoughts_token_count", 0) or 0
         return ProviderResponse(
